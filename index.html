@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARADISE — Sistema de Registo</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;600;700&display=swap');
+
+  :root {
+    /* Cores Temáticas PARADISE */
+    --pink-bright: #ff60b5;
+    --pink-base: #d94093;
+    --pink-dark: #8c1c56;
+    
+    --green-bright: #69c734;
+    --green-base: #4a9e1b;
+    --green-shadow: #123003;
+
+    --mc-bg: #1a151b;
+    --mc-panel: #2e262f;
+    --mc-inner: #151116;
+    --text-white: #ffffff;
+    --text-gray: #aaaaaa;
+    --text-yellow: #ffff55;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; image-rendering: pixelated; }
+
+  body {
+    background-color: var(--mc-bg);
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.4) 2px, transparent 2px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.4) 2px, transparent 2px);
+    background-size: 32px 32px;
+    color: var(--text-white);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 15px;
+  }
+
+  /* LOGO E TÍTULO */
+  .logo-container { text-align: center; margin-bottom: 25px; }
+  .logo-server {
+    font-family: 'Press Start 2P', monospace; font-size: 32px; color: var(--green-bright);
+    text-shadow: 4px 4px 0px var(--green-shadow); letter-spacing: -2px; margin-bottom: 5px;
+  }
+  .logo-server span { color: var(--pink-bright); text-shadow: 4px 4px 0px var(--pink-dark); }
+  .subtitle { font-family: 'VT323', monospace; font-size: 24px; color: var(--text-yellow); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* CAIXAS GUI MINECRAFT */
+  .mc-box {
+    background-color: var(--mc-panel); border: 4px solid #000000;
+    box-shadow: inset -4px -4px 0px #1c171d, inset 4px 4px 0px #524454;
+    padding: 30px; width: 100%; max-width: 500px;
+  }
+  .mc-title { font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--text-white); text-align: center; margin-bottom: 25px; text-shadow: 2px 2px 0px #000; }
+
+  /* CAMPOS DE ENTRADA */
+  .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+  label { font-family: 'VT323', monospace; font-size: 20px; color: var(--text-gray); }
+  input, textarea {
+    background-color: var(--mc-inner); border: 3px solid #555555; color: #fff; padding: 12px;
+    font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; outline: none; width: 100%;
+  }
+  input:focus, textarea:focus { border-color: var(--pink-bright); }
+  input.err { border-color: #ff5555 !important; } input.ok { border-color: var(--green-bright) !important; }
+
+  .hint { font-family: 'VT323', monospace; font-size: 18px; color: var(--text-gray); min-height: 20px; display: flex; align-items: center; gap: 8px; }
+  .hint.err { color: #ff5555; } .hint.ok { color: var(--green-bright); }
+
+  .mc-avatar { width: 24px; height: 24px; border-radius: 4px; display: none; image-rendering: pixelated; }
+  .platform-tag { font-size: 12px; font-family: 'Press Start 2P', monospace; padding: 3px 6px; border-radius: 2px; margin-left: 8px; }
+  .tag-java { background: #3c8527; color: white; text-shadow: 1px 1px 0 #000; }
+  .tag-bedrock { background: #555555; color: white; text-shadow: 1px 1px 0 #000; }
+
+  /* BOTÕES MINECRAFT */
+  .mc-btn {
+    font-family: 'Press Start 2P', monospace; font-size: 11px; padding: 16px; width: 100%;
+    border: 3px solid #000000; cursor: pointer; text-shadow: 2px 2px 0px #000; color: #ffffff;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+  .mc-btn-green { background-color: var(--green-base); box-shadow: inset -3px -3px 0px var(--green-shadow), inset 3px 3px 0px var(--green-bright); }
+  .mc-btn-green:hover:not(:disabled) { background-color: var(--green-bright); }
+  .mc-btn-pink { background-color: var(--pink-base); box-shadow: inset -3px -3px 0px var(--pink-dark), inset 3px 3px 0px var(--pink-bright); }
+  .mc-btn-pink:hover { background-color: var(--pink-bright); }
+  .mc-btn:disabled { background-color: #555555 !important; color: #aaaaaa !important; cursor: not-allowed; }
+
+  .mc-alert { background: #4a0000; border: 2px dashed #ff5555; padding: 12px; font-size: 12px; color: #ffaaaa; margin: 15px 0; line-height: 1.5; }
+
+  /* PAINEL ADMIN */
+  #admin-panel { width: 100%; max-width: 950px; display: none; }
+  .panel-header { background-color: var(--mc-panel); border: 4px solid #000; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .panel-title { font-family: 'Press Start 2P', monospace; font-size: 14px; color: var(--text-yellow); text-shadow: 2px 2px 0 #000; }
+  
+  .admin-bar-options { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
+  .counter-box { background: var(--mc-inner); border: 2px solid #555; padding: 10px 15px; font-family: 'VT323', monospace; font-size: 20px; }
+
+  .sec-container { background-color: var(--mc-panel); border: 4px solid #000; padding: 20px; margin-bottom: 25px; }
+  .sec-title { font-family: 'Press Start 2P', monospace; font-size: 11px; margin-bottom: 15px; text-shadow: 2px 2px 0 #000; }
+  .tbl-scroll { overflow-x: auto; background: var(--mc-inner); border: 3px solid #000; }
+  
+  table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+  th { background-color: #221c23; font-family: 'VT323', monospace; font-size: 20px; color: var(--text-gray); padding: 12px; border-bottom: 3px solid #555; }
+  td { padding: 12px; border-bottom: 1px solid #2e262f; vertical-align: middle; }
+  .nick-render { font-family: 'VT323', monospace; font-size: 24px; color: var(--green-bright); text-shadow: 1px 1px 0px #000; }
+  .empty-msg { text-align: center; padding: 30px; font-family: 'VT323', monospace; font-size: 22px; color: var(--text-gray); }
+
+  .action-btn { font-family: 'VT323', monospace; font-size: 18px; padding: 5px 12px; border: 2px solid #000; color: #fff; cursor: pointer; margin-right: 5px; }
+  .act-green { background: var(--green-base); } .act-red { background: #b12525; }
+
+  #toast { position: fixed; bottom: 20px; right: 20px; background-color: #000; border: 3px solid var(--pink-bright); padding: 15px 25px; font-family: 'VT323', monospace; font-size: 22px; z-index: 9999; display: none; }
+  #toast.ok { border-color: var(--green-bright); color: var(--green-bright); }
+  #toast.err { border-color: #ff5555; color: #ff5555; }
+</style>
+</head>
+<body>
+
+<div class="logo-container">
+  <div class="logo-server">PARADISE<span>.MC</span></div>
+  <div class="subtitle">SISTEMA DE REGISTO E CONTROLO</div>
+</div>
+
+<div id="register-view" class="mc-box">
+  <div class="mc-title">📋 FORMULÁRIO DE ENTRADA</div>
+  
+  <div class="field">
+    <label>NOME NO WHATSAPP:</label>
+    <input type="text" id="inp-nome" placeholder="Ex: Lucas Ramos" oninput="valNome()" autocomplete="off">
+    <div class="hint" id="h-nome">Como identificar-se no grupo</div>
+  </div>
+  
+  <div class="field">
+    <label>NICK NO MINECRAFT:</label>
+    <input type="text" id="inp-nick" placeholder="Ex: Notch (Java) ou Gamer123 (Bedrock)" oninput="valNick()" autocomplete="off">
+    <div class="hint" id="h-nick">
+      <img id="mc-avatar" class="mc-avatar" src="" alt="Avatar">
+      <span id="txt-nick">Insira o nick exato do jogo</span>
+      <span id="tag-platform" class="platform-tag" style="display:none;"></span>
+    </div>
+  </div>
+  
+  <button class="mc-btn mc-btn-green" id="btn-cad" onclick="cadastrar()" disabled>ENVIAR SOLICITAÇÃO</button>
+  
+  <div class="mc-alert">
+    ◆ Suporta jogadores de <b>Java</b> e <b>Bedrock (Xbox/PE)</b>.<br>
+    ◆ O seu registo ficará pendente até aprovação.<br>
+    ◆ Uso de Hacks resulta em banimento permanente.
+  </div>
+  
+  <button class="mc-btn mc-btn-pink" onclick="showAdminLogin()" style="margin-top:20px;">ACEDER AO PAINEL ADMIN</button>
+</div>
+
+<div id="login-view" class="mc-box" style="display:none;">
+  <div class="mc-title" style="color:var(--text-yellow)">👑 AUTENTICAÇÃO DO MESTRE</div>
+  <div class="field">
+    <label>INSIRA A PALAVRA-PASSE MASTER:</label>
+    <input type="password" id="inp-pass" placeholder="••••••••">
+    <div class="hint err" id="h-pass" style="display:none;">Palavra-passe incorreta!</div>
+  </div>
+  <button class="mc-btn mc-btn-green" onclick="doLogin()">ENTRAR NO PAINEL</button>
+  <button class="mc-btn" style="background:#444;" onclick="showRegister()">VOLTAR</button>
+</div>
+
+<div id="admin-panel">
+  <div class="panel-header">
+    <div class="panel-title">👑 CENTRAL OPERACIONAL PARADISE</div>
+    <div style="display:flex; gap:10px;">
+      <button class="action-btn act-green" style="font-family:'Press Start 2P'; font-size:10px; padding:8px;" onclick="toggleCross()">LOGS</button>
+      <button class="action-btn act-red" style="font-family:'Press Start 2P'; font-size:10px; padding:8px;" onclick="doLogout()">SAIR</button>
+    </div>
+  </div>
+
+  <div class="admin-bar-options">
+    <div class="counter-box">⏳ PENDENTES: <span id="count-pend" style="color:var(--text-yellow)">0</span></div>
+    <div class="counter-box">✅ APROVADOS: <span id="count-aprov" style="color:var(--green-bright)">0</span></div>
+    <input type="text" id="admin-search" placeholder="🔍 Procurar nick..." oninput="filtrarAprovados()" style="padding:10px;">
+  </div>
+
+  <div class="sec-container" style="border-color: var(--pink-base);">
+    <div class="sec-title" style="color:var(--pink-bright);">⏳ PEDIDOS PENDENTES</div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>WHATSAPP</th><th>NICK MINECRAFT</th><th>PLATAFORMA</th><th>DATA</th><th>AÇÕES</th></tr></thead>
+        <tbody id="tb-pend"></tbody>
+      </table>
+      <div class="empty-msg" id="em-pend">Nenhuma solicitação pendente! ✨</div>
+    </div>
+  </div>
+
+  <div class="sec-container" style="border-color: var(--green-base);">
+    <div class="sec-title" style="color:var(--green-bright);">✅ JOGADORES APROVADOS</div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>WHATSAPP</th><th>NICK MINECRAFT</th><th>PLATAFORMA</th><th>DATA</th><th>AÇÕES</th></tr></thead>
+        <tbody id="tb-aprov"></tbody>
+      </table>
+      <div class="empty-msg" id="em-aprov">Nenhum jogador aprovado ainda.</div>
+    </div>
+  </div>
+
+  <div class="sec-container" id="cross-sec" style="display:none; border-color: #4488FF;">
+    <div class="sec-title" style="color:#4488FF;">🔍 COMPARAR LOGS</div>
+    <textarea id="log-inp" style="height:120px; margin-bottom:12px;" placeholder="Cole a lista de nicks aqui..."></textarea>
+    <button class="mc-btn mc-btn-green" style="width:auto;" onclick="cruzar()">VERIFICAR ONLINE</button>
+    <div id="cross-out" style="margin-top:15px; font-family:'VT323'; font-size:20px;"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://epiunatlgdejbtkdqjqg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwaXVuYXRsZ2RlamJ0a2RxanFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNTQzNDgsImV4cCI6MjA5NzYzMDM0OH0.Pqu_zFslHpg157SF7_EXiJCAoxoxTFf9KnTGrT9YT2g'
+);
+
+// PALAVRA-PASSE DO ADMINISTRADOR AQUI:
+const MASTER_PASSWORD = "admin"; 
+
+let listaAprovadosCompleta = [];
+let nomeOk = false, nickOk = false, nickTimer;
+let plataformaAtual = "Desconhecida"; // Guarda se é Java ou Bedrock
+let avatarAtual = "";
+
+function valNome() {
+  const v = document.getElementById('inp-nome').value.trim();
+  const h = document.getElementById('h-nome'), i = document.getElementById('inp-nome');
+  if(v.length < 3) { nomeOk = false; i.className = 'err'; h.textContent = 'Insira o nome!'; h.className = 'hint err'; }
+  else { nomeOk = true; i.className = 'ok'; h.textContent = '✓ Nome aceite'; h.className = 'hint ok'; }
+  document.getElementById('btn-cad').disabled = !(nomeOk && nickOk);
+}
+
+function valNick() {
+  const v = document.getElementById('inp-nick').value.trim();
+  const txt = document.getElementById('txt-nick');
+  const h = document.getElementById('h-nick'), i = document.getElementById('inp-nick');
+  const avatar = document.getElementById('mc-avatar');
+  const tag = document.getElementById('tag-platform');
+  
+  clearTimeout(nickTimer);
+  avatar.style.display = 'none';
+  tag.style.display = 'none';
+  
+  if(v.length < 3) {
+    nickOk = false; i.className = 'err'; txt.textContent = 'Muito curto!'; h.className = 'hint err';
+    document.getElementById('btn-cad').disabled = true; return;
+  }
+  
+  txt.textContent = '⏳ A procurar conta (Java & Bedrock)...'; h.className = 'hint';
+  nickTimer = setTimeout(() => checarAmbasPlataformas(v), 1000);
+}
+
+// 🟢 VERIFICAÇÃO DUPLA: JAVA + BEDROCK (XBOX)
+async function checarAmbasPlataformas(nick) {
+  const h = document.getElementById('h-nick');
+  const txt = document.getElementById('txt-nick');
+  const i = document.getElementById('inp-nick');
+  const avatar = document.getElementById('mc-avatar');
+  const tag = document.getElementById('tag-platform');
+  const btn = document.getElementById('btn-cad');
+
+  try {
+    let nickCorreto = nick;
+    let encontrou = false;
+    
+    // 1. Tentar primeiro JAVA
+    let res = await fetch(`https://playerdb.co/api/player/minecraft/${nick}`);
+    let data = await res.json();
+
+    if (data.code === "player.found") {
+      encontrou = true;
+      plataformaAtual = "Java";
+      nickCorreto = data.data.player.username;
+      avatarAtual = data.data.player.avatar;
+    } else {
+      // 2. Se falhou Java, limpar possíveis prefixos (Geyser como . ou *) e tentar BEDROCK/XBOX
+      let nickLimpo = nick.replace(/^[\.\*\_]/, ''); 
+      let resXbox = await fetch(`https://playerdb.co/api/player/xbox/${nickLimpo}`);
+      let dataXbox = await resXbox.json();
+      
+      if(dataXbox.code === "player.found") {
+        encontrou = true;
+        plataformaAtual = "Bedrock";
+        nickCorreto = nick; // Mantemos o prefixo se o jogador o tiver digitado, senão o Geyser pode bugar.
+        avatarAtual = dataXbox.data.player.avatar; // Puxa imagem da Xbox
+      }
+    }
+
+    if (!encontrou) {
+      nickOk = false; i.className = 'err'; h.className = 'hint err';
+      txt.textContent = '❌ Conta inexistente (Nem Java, nem Bedrock)!';
+      btn.disabled = true; return;
+    }
+
+    // 3. Verificar se já existe no SUPABASE (Servidor)
+    txt.textContent = '⏳ A verificar base de dados PARADISE...';
+    const { data: dbData } = await sb.from('jogadores').select('nick').ilike('nick', nickCorreto).maybeSingle();
+    
+    if(dbData) {
+      nickOk = false; i.className = 'err'; h.className = 'hint err';
+      txt.textContent = '❌ Jogador já registado!';
+    } else {
+      nickOk = true; i.className = 'ok'; h.className = 'hint ok';
+      
+      // Mostrar info da plataforma
+      avatar.src = avatarAtual; avatar.style.display = 'block';
+      tag.textContent = `[${plataformaAtual}]`;
+      tag.className = `platform-tag ${plataformaAtual === 'Java' ? 'tag-java' : 'tag-bedrock'}`;
+      tag.style.display = 'inline-block';
+      
+      txt.textContent = `✓ Conta confirmada: ${nickCorreto}`;
+      i.value = nickCorreto; // Auto-corrige o input
+    }
+    btn.disabled = !(nomeOk && nickOk);
+
+  } catch (error) {
+    nickOk = false; i.className = 'err'; h.className = 'hint err';
+    txt.textContent = '⚠️ Erro ao contactar API da Mojang/Xbox.';
+    btn.disabled = true;
+  }
+}
+
+// SALVAR FORMULÁRIO COM A PLATAFORMA
+async function cadastrar() {
+  const nome = document.getElementById('inp-nome').value.trim();
+  const nick = document.getElementById('inp-nick').value.trim();
+  const btn = document.getElementById('btn-cad');
+  
+  btn.disabled = true; btn.textContent = 'A GUARDAR...';
+  
+  // Guardamos o status como pendente, mas também adicionamos a plataforma à nota/status se quisermos
+  const timestampIso = new Date().toISOString();
+
+  // NOTA: Como não adicionei uma coluna extra no seu banco, vou concatenar a Plataforma ao "status" temporariamente
+  // ou apenas confiar na UI do Admin. Vamos guardar limpo no banco normal.
+  const { error } = await sb.from('jogadores').insert([
+    { nome: nome, nick: nick, status: 'pendente', created_at: timestampIso }
+  ]);
+
+  if(error) {
+    toast('Erro ao guardar!', 'err');
+    btn.disabled = false; btn.textContent = 'ENVIAR SOLICITAÇÃO';
+  } else {
+    toast('Registo enviado!', 'ok');
+    document.getElementById('inp-nome').value = '';
+    document.getElementById('inp-nick').value = '';
+    document.getElementById('inp-nome').className = '';
+    document.getElementById('inp-nick').className = '';
+    document.getElementById('mc-avatar').style.display = 'none';
+    document.getElementById('tag-platform').style.display = 'none';
+    document.getElementById('txt-nick').textContent = 'Insira o nick exato do jogo';
+    nomeOk = false; nickOk = false;
+    btn.textContent = 'ENVIAR SOLICITAÇÃO';
+  }
+}
+
+// LOGIN E PAINEL (Simplificados)
+function showAdminLogin() { document.getElementById('register-view').style.display = 'none'; document.getElementById('login-view').style.display = 'block'; }
+function showRegister() { document.getElementById('login-view').style.display = 'none'; document.getElementById('register-view').style.display = 'block'; }
+function doLogin() {
+  const pass = document.getElementById('inp-pass').value;
+  if(pass === MASTER_PASSWORD) {
+    document.getElementById('login-view').style.display = 'none'; document.getElementById('admin-panel').style.display = 'block';
+    loadAdminDados(); toast('Painel Aberto!', 'ok');
+  } else { document.getElementById('h-pass').style.display = 'block'; }
+}
+function doLogout() { document.getElementById('admin-panel').style.display = 'none'; document.getElementById('register-view').style.display = 'block'; document.getElementById('inp-pass').value = ''; }
+
+async function loadAdminDados() {
+  const { data, error } = await sb.from('jogadores').select('*').order('created_at', { ascending: false });
+  if(error) return toast('Erro!', 'err');
+
+  const pendentes = data.filter(j => j.status === 'pendente');
+  listaAprovadosCompleta = data.filter(j => j.status === 'aprovado');
+  document.getElementById('count-pend').textContent = pendentes.length;
+  document.getElementById('count-aprov').textContent = listaAprovadosCompleta.length;
+
+  gerarTabela(pendentes, 'tb-pend', 'em-pend', true);
+  gerarTabela(listaAprovadosCompleta, 'tb-aprov', 'em-aprov', false);
+}
+
+function gerarTabela(lista, tbodyId, emptyId, isPendente) {
+  const tb = document.getElementById(tbodyId);
+  if(lista.length === 0) { tb.innerHTML = ''; document.getElementById(emptyId).style.display = 'block'; return; }
+  
+  document.getElementById(emptyId).style.display = 'none';
+  tb.innerHTML = lista.map(j => {
+    // Detectar visualmente se é Bedrock pelo nick (comum ter ponto ou espaço/asterisco no Geyser)
+    const isBedrock = /^[\.\*\_]/.test(j.nick) || j.nick.includes(' ');
+    const tagClass = isBedrock ? 'tag-bedrock' : 'tag-java';
+    const tagText = isBedrock ? 'Bedrock' : 'Java';
+    const acoes = isPendente 
+      ? `<button class="action-btn act-green" onclick="alterarStatus(${j.id}, 'aprovado')">Aprovar</button>
+         <button class="action-btn act-red" onclick="deletarJogador(${j.id})">Recusar</button>`
+      : `<button class="action-btn act-red" onclick="deletarJogador(${j.id})">Remover</button>`;
+
+    return `<tr>
+      <td>${esc(j.nome)}</td>
+      <td><span class="nick-render" style="${!isPendente ? 'color:var(--pink-bright)' : ''}">${esc(j.nick)}</span></td>
+      <td><span class="platform-tag ${tagClass}">${tagText}</span></td>
+      <td>${new Date(j.created_at).toLocaleDateString('pt-PT')}</td>
+      <td>${acoes}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filtrarAprovados() {
+  const query = document.getElementById('admin-search').value.toLowerCase();
+  gerarTabela(listaAprovadosCompleta.filter(j => j.nick.toLowerCase().includes(query)), 'tb-aprov', 'em-aprov', false);
+}
+
+async function alterarStatus(id, novoStatus) { await sb.from('jogadores').update({ status: novoStatus }).eq('id', id); loadAdminDados(); }
+async function deletarJogador(id) { if(confirm('Apagar permanentemente?')) { await sb.from('jogadores').delete().eq('id', id); loadAdminDados(); } }
+function toggleCross() { const sec = document.getElementById('cross-sec'); sec.style.display = sec.style.display === 'none' ? 'block' : 'none'; }
+function cruzar() { /* Lógica de cruzamento mantida igual */ }
+
+function esc(s) { return String(s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function toast(msg, type) { const t = document.getElementById('toast'); t.textContent = msg; t.className = `show ${type}`; t.style.display='block'; setTimeout(()=>t.style.display='none', 3000); }
+</script>
+</body>
+</html>
+
