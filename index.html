@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MCTrack — Registro</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root {
+    --bg:#0D1117; --bg2:#161B22; --bg3:#1C2330;
+    --grass:#5D8A3C; --grass2:#7BBF50; --dirt:#8B5E3C;
+    --border:#2D4A2D; --text:#E8F5E8; --muted:#6B8F6B;
+    --gold:#FFD700; --red:#FF4444; --orange:#FF8C00;
+    --green:#44FF88; --blue:#4488FF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+  .logo{font-family:'Press Start 2P',monospace;font-size:16px;color:var(--grass2);text-shadow:2px 2px 0 #000;text-align:center;margin-bottom:6px;}
+  .logo span{color:var(--gold);}
+  .subtitle{text-align:center;font-size:12px;color:var(--muted);margin-bottom:32px;}
+  .pixel-bar{height:5px;width:100%;background:repeating-linear-gradient(90deg,var(--grass) 0 8px,var(--grass2) 8px 16px,var(--dirt) 16px 24px,#5C3D1E 24px 32px);border-radius:3px;margin-bottom:28px;opacity:0.7;}
+  .card{background:var(--bg2);border:2px solid var(--border);border-radius:10px;padding:28px;width:100%;max-width:460px;}
+  .card-title{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--grass2);letter-spacing:1px;margin-bottom:22px;text-shadow:1px 1px 0 #000;}
+  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  input{background:var(--bg3);border:2px solid var(--border);border-radius:5px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px;padding:10px 14px;outline:none;transition:border-color 0.15s;width:100%;}
+  input::placeholder{color:var(--muted);opacity:0.6;}
+  input:focus{border-color:var(--grass);}
+  input.err{border-color:var(--red)!important;}
+  input.ok{border-color:var(--green)!important;}
+  input[type="password"]{letter-spacing:2px;}
+  .hint{font-size:11px;color:var(--muted);min-height:15px;transition:color 0.2s;}
+  .hint.err{color:var(--red);} .hint.ok{color:var(--green);}
+  .btn{width:100%;padding:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;border:none;border-radius:5px;cursor:pointer;transition:all 0.15s;letter-spacing:0.5px;margin-top:6px;}
+  .btn-green{background:var(--grass);color:#fff;border:2px solid var(--grass2);}
+  .btn-green:hover:not(:disabled){background:var(--grass2);transform:translateY(-1px);}
+  .btn-green:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+  .btn-gold{background:#2B2200;color:var(--gold);border:2px solid var(--gold);margin-top:12px;}
+  .btn-gold:hover{background:var(--gold);color:#000;}
+  .notice{margin-top:16px;padding:10px 14px;border-radius:5px;font-size:11px;line-height:1.7;border:1px solid;}
+  .notice-warn{background:#2B2200;border-color:var(--gold);color:var(--gold);}
+  .rl{font-size:10px;color:var(--muted);text-align:right;margin-top:4px;}
+  #admin-panel{width:100%;max-width:900px;display:none;}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  .panel-title{font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);text-shadow:1px 1px 0 #000;}
+  .btn-sm{padding:6px 14px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;border:2px solid;background:transparent;transition:all 0.15s;font-family:'Inter',sans-serif;}
+  .btn-sm.red{color:var(--red);border-color:var(--red);} .btn-sm.red:hover{background:var(--red);color:#fff;}
+  .btn-sm.green{color:var(--green);border-color:var(--green);} .btn-sm.green:hover{background:var(--green);color:#000;}
+  .btn-sm.gold{color:var(--gold);border-color:var(--gold);} .btn-sm.gold:hover{background:var(--gold);color:#000;}
+  .sec{background:var(--bg2);border:2px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px;}
+  .sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+  .tbl-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--bg3);color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;padding:9px 12px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;}
+  td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(93,138,60,0.04);}
+  .nick-cell{font-family:'VT323',monospace;font-size:19px;color:var(--grass2);}
+  .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:3px;font-size:10px;font-weight:700;white-space:nowrap;}
+  .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+  .cross-input{width:100%;background:var(--bg3);border:2px solid var(--border);border-radius:5px;color:var(--text);font-family:'VT323',monospace;font-size:17px;padding:10px 14px;outline:none;resize:vertical;min-height:120px;margin-bottom:12px;}
+  .cross-input:focus{border-color:var(--grass);}
+  .cross-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:4px;margin-bottom:5px;border:1px solid transparent;flex-wrap:wrap;gap:6px;}
+  .cross-row.ok{background:#0A1F10;border-color:#1A4025;}
+  .cross-row.suspect{background:#2B1500;border-color:#4A2500;}
+  .cross-row.unknown{background:#0D0D2B;border-color:#1A1A4A;}
+  .cross-row.absent{background:#1A1A1A;border-color:#2D2D2D;}
+  .cross-nick{font-family:'VT323',monospace;font-size:19px;}
+  .cross-name{font-size:11px;color:var(--muted);margin-left:6px;}
+  .empty{text-align:center;padding:28px;color:var(--muted);font-size:13px;}
+  #toast{position:fixed;bottom:20px;right:20px;padding:11px 18px;border-radius:6px;font-size:12px;font-weight:600;z-index:9999;display:none;border:2px solid;box-shadow:0 4px 20px rgba(0,0,0,0.5);max-width:280px;}
+  #toast.show{display:block;animation:pop 0.2s ease;}
+  #toast.ok{background:#0D2B1A;color:var(--green);border-color:var(--green);}
+  #toast.err{background:#2B0D0D;color:var(--red);border-color:var(--red);}
+  #toast.inf{background:#0D1F3D;color:var(--blue);border-color:var(--blue);}
+  @keyframes pop{from{opacity:0;transform:translateX(12px);}to{opacity:1;transform:none;}}
+</style>
+</head>
+<body>
+
+<div id="register-view">
+  <div class="logo">⛏ MC<span>Track</span></div>
+  <div class="subtitle">Servidor de Minecraft — Registro de jogadores</div>
+  <div class="card">
+    <div class="pixel-bar"></div>
+    <div class="card-title">📋 Cadastro</div>
+    <div class="field">
+      <label>Nome no WhatsApp</label>
+      <input type="text" id="inp-nome" placeholder="Ex: Carlos Silva" oninput="valNome()" autocomplete="off">
+      <div class="hint" id="h-nome">Como você aparece no grupo</div>
+    </div>
+    <div class="field">
+      <label>Nick do Minecraft</label>
+      <input type="text" id="inp-nick" placeholder="Ex: Juze123" oninput="valNick()" autocomplete="off">
+      <div class="hint" id="h-nick">Digite o nick exato da sua conta</div>
+    </div>
+    <button class="btn btn-green" id="btn-cad" onclick="cadastrar()" disabled>✅ Enviar cadastro</button>
+    <div class="rl" id="rl-info"></div>
+    <div class="notice notice-warn" style="margin-top:14px;">
+      ⚠️ Seu cadastro fica pendente até o admin aprovar.<br>
+      📌 Nome e nick ficam vinculados. Se for banido, será identificado.
+    </div>
+    <button class="btn btn-gold" onclick="showAdminLogin()">👑 Área admin</button>
+  </div>
+</div>
+
+<div id="login-view" style="display:none;flex-direction:column;align-items:center;">
+  <div class="logo">⛏ MC<span>Track</span></div>
+  <div class="subtitle">Acesso restrito</div>
+  <div class="card">
+    <div class="pixel-bar"></div>
+    <div class="card-title" style="color:var(--gold)">👑 Admin</div>
+    <div class="field">
+      <label>Senha Admin</label>
+      <input type="password" id="inp-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <div class="hint err" id="h-pass" style="display:none;">Senha incorreta</div>
+    </div>
+    <button class="btn btn-green" onclick="doLogin()">🔓 Entrar</button>
+    <button class="btn" style="background:transparent;border:2px solid var(--border);color:var(--muted);margin-top:10px;" onclick="showRegister()">← Voltar</button>
+  </div>
+</div>
+
+<div id="admin-panel">
+  <div class="panel-header">
+    <div class="panel-title">👑 Painel Admin</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-sm gold" onclick="toggleCross()">🔍 Cruzamento</button>
+      <button class="btn-sm red"  onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="sec" style="border-color:#3D3000;">
+    <div class="sec-title" style="color:var(--gold);">⏳ Pendentes</div>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Nome WhatsApp</th><th>Nick</th><th>Cadastrado</th><th>Ações</th></tr></thead>
+      <tbody id="tb-pend"></tbody></table>
+      <div class="empty" id="em-pend" style="display:none;">Nenhum pendente ✅</div>
+    </div>
+  </div>
+
+  <div class="sec" style="border-color:#1A4025;">
+    <div class="sec-title" style="color:var(--green);">✅ Aprovados</div>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Nome WhatsApp</th><th>Nick</th><th>Cadastrado</th><th>Ações</th></tr></thead>
+      <tbody id="tb-aprov"></tbody></table>
+      <div class="empty" id="em-aprov" style="display:none;">Nenhum aprovado ainda</div>
+    </div>
+  </div>
+
+  <div class="sec" id="cross-sec" style="display:none;border-color:#1A1A4A;">
+    <div class="sec-title" style="color:var(--blue);">🔍 Cruzamento de Log</div>
+    <textarea class="cross-input" id="log-inp" placeholder="Cole os nicks que entraram no servidor (um por linha):&#10;Juze123&#10;Steve&#10;6755"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-sm green" onclick="cruzar()">Cruzar</button>
+      <button class="btn-sm red"   onclick="limparCross()">Limpar</button>
+    </div>
+    <div id="cross-out" style="margin-top:16px;"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const { createClient } = supabase;
+const sb = createClient(
+  'https://epiunatlgdejbtkdqjqg.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwaXVuYXRsZ2RlamJ0a2RxanFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNTQzNDgsImV4cCI6MjA5NzYzMDM0OH0.Pqu_zFslHpg157SF7_EXiJCAoxoxTFf9KnTGrT9YT2g'
+);
+
+let isAdminAuthenticated = false;
+
+// RATE LIMIT
+const RL_KEY='mc_rl', RL_MAX=3, RL_WIN=3600000;
+function getRLData(){try{return JSON.parse(localStorage.getItem(RL_KEY)||'{"ts":[]}')}catch{return{ts:[]}}}
+function checkRL(){
+  const now=Date.now(); let d=getRLData();
+  d.ts=d.ts.filter(t=>now-t<RL_WIN);
+  localStorage.setItem(RL_KEY,JSON.stringify(d));
+  const left=RL_MAX-d.ts.length;
+  document.getElementById('rl-info').textContent=`Tentativas restantes: ${left}/${RL_MAX} na última hora`;
+  return left>0;
+}
+function consumeRL(){let d=getRLData();d.ts.push(Date.now());localStorage.setItem(RL_KEY,JSON.stringify(d));}
+
+// HASH GENERATOR (SHA-256)
+async function hashStr(s){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// VALIDAÇÃO
+let nomeOk=false,nickOk=false,nickTimer;
+
+function valNome(){
+  const v=document.getElementById('inp-nome').value.trim();
+  const h=document.getElementById('h-nome'),i=document.getElementById('inp-nome');
+  const clean=v.replace(/[^a-zA-ZÀ-ÿ\s]/g,'');
+  if(v!==clean)document.getElementById('inp-nome').value=clean;
+  if(clean.length<2){nomeOk=false;i.className='err';h.textContent='Nome muito curto';h.className='hint err';}
+  else if(clean.length>50){nomeOk=false;i.className='err';h.textContent='Nome muito longo';h.className='hint err';}
+  else{nomeOk=true;i.className='ok';h.textContent='✓ Nome válido';h.className='hint ok';}
+  updateBtn();
+}
+
+function valNick(){
+  const v=document.getElementById('inp-nick').value.trim();
+  const h=document.getElementById('h-nick'),i=document.getElementById('inp-nick');
+  const clean=v.replace(/[^a-zA-Z0-9_]/g,'');
+  if(v!==clean)document.getElementById('inp-nick').value=clean;
+  clearTimeout(nickTimer);
+  if(clean.length<3||clean.length>16){
+    nickOk=false;i.className=clean.length>0?'err':'';
+    h.textContent='Nick deve ter 3 a 16 caracteres';h.className='hint'+(clean.length>0?' err':'');
+    updateBtn();return;
+  }
+  h.textContent='⏳ Verificando...';h.className='hint';i.className='';
+  nickOk=false;updateBtn();
+  nickTimer=setTimeout(()=>checkNick(clean),600);
+}
+
+async function checkNick(nick){
+  const h=document.getElementById('h-nick'),i=document.getElementById('inp-nick');
+  try {
+    const { data, error } = await sb.from('jogadores').select('nick').eq('nick', nick).maybeSingle();
+    if(error) throw error;
+    if(data){nickOk=false;i.className='err';h.textContent='❌ Nick já cadastrado';h.className='hint err';}
+    else{nickOk=true;i.className='ok';h.textContent='✓ Nick disponível';h.className='hint ok';}
+  } catch (err) {
+    console.error("Erro ao verificar nick:", err);
+  }
+  updateBtn();
+}
+
+function updateBtn(){
+  document.getElementById('btn-cad').disabled=!(nomeOk&&nickOk);
+  checkRL();
+}
+
+// CADASTRO CORRIGIDO (Correção do envio ao Supabase)
+async function cadastrar(){
+  if(!checkRL()){toast('Limite de tentativas atingido. Tente em 1 hora.','err');return;}
+  const nome=document.getElementById('inp-nome').value.trim();
+  const nick=document.getElementById('inp-nick').value.trim();
+  if(!nome||!nick)return;
+  
+  const btn=document.getElementById('btn-cad');
+  btn.disabled=true;btn.textContent='⏳ Enviando...';
+  
+  try {
+    // Forçamos explicitamente o status inicial como 'pendente'
+    const { data, error } = await sb.from('jogadores').insert([
+      { nome: nome, nick: nick, status: 'pendente' }
+    ]).select();
+
+    if (error) throw error;
+
+    consumeRL();
+    ['inp-nome','inp-nick'].forEach(id=>{document.getElementById(id).value='';document.getElementById(id).className='';});
+    document.getElementById('h-nome').textContent='Como você aparece no grupo';document.getElementById('h-nome').className='hint';
+    document.getElementById('h-nick').textContent='Digite o nick exato da sua conta';document.getElementById('h-nick').className='hint';
+    nomeOk=false;nickOk=false;
+    toast('Cadastro enviado! Aguarde aprovação ✅','ok');
+  } catch(err) {
+    console.error("Erro detalhado do Supabase:", err);
+    toast('Erro ao salvar no banco. Verifique as permissões RLS no painel Supabase.','err');
+  } finally {
+    btn.textContent='✅ Enviar cadastro';
+    updateBtn();
+  }
+}
+
+// NAVEGAÇÃO E SEGURANÇA INTERNA
+function showAdminLogin(){
+  document.getElementById('register-view').style.display='none';
+  const lv=document.getElementById('login-view');
+  lv.style.display='flex';
+  setTimeout(()=>document.getElementById('inp-pass').focus(),100);
+}
+function showRegister(){
+  document.getElementById('login-view').style.display='none';
+  document.getElementById('register-view').style.display='block';
+  document.getElementById('inp-pass').value='';
+  document.getElementById('h-pass').style.display='none';
+}
+
+async function doLogin(){
+  const pass=document.getElementById('inp-pass').value;
+  const hash=await hashStr(pass);
+  // Hash correspondente à sua senha antiga em SHA-256 para manter compatibilidade segura
+  const secureToken = "7a469bb8a6df2400f40df837be7043813cbef783818e69818816ca1f43eb9133"; 
+  
+  if(hash === secureToken){
+    isAdminAuthenticated = true;
+    document.getElementById('login-view').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+    document.getElementById('inp-pass').value='';
+    loadAdmin();
+    toast('Bem-vindo, Admin 👑','ok');
+  } else {
+    isAdminAuthenticated = false;
+    document.getElementById('h-pass').style.display='block';
+    document.getElementById('inp-pass').value='';
+    toast('Senha incorreta','err');
+  }
+}
+
+function doLogout(){
+  isAdminAuthenticated = false;
+  document.getElementById('admin-panel').style.display='none';
+  document.getElementById('register-view').style.display='block';
+  document.getElementById('cross-sec').style.display='none';
+  document.getElementById('cross-out').innerHTML='';
+  document.getElementById('log-inp').value='';
+}
+
+function toggleCross(){
+  if(!isAdminAuthenticated) return;
+  const el=document.getElementById('cross-sec');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
+
+// ADMIN — DADOS
+async function loadAdmin(){
+  if(!isAdminAuthenticated) return;
+  try {
+    const{data, error}=await sb.from('jogadores').select('*').order('created_at',{ascending:false});
+    if(error) throw error;
+    
+    const pendentes=data.filter(j=>j.status==='pendente');
+    const aprovados=data.filter(j=>j.status==='aprovado');
+
+    const tbP=document.getElementById('tb-pend'),emP=document.getElementById('em-pend');
+    if(pendentes.length===0){tbP.innerHTML='';emP.style.display='block';}
+    else{
+      emP.style.display='none';
+      tbP.innerHTML=pendentes.map(j=>`
+        <tr>
+          <td>${esc(j.nome)}</td>
+          <td><span class="nick-cell">${esc(j.nick)}</span></td>
+          <td style="color:var(--muted);font-size:11px;">${fmtDate(j.created_at || j.criado_em)}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn-sm green" onclick="aprovar(${j.id},'${esc(j.nick)}')">✅ Aprovar</button>
+            <button class="btn-sm red"   onclick="remover(${j.id},'${esc(j.nick)}')">🗑 Recusar</button>
+          </td>
+        </tr>`).join('');
+    }
+
+    const tbA=document.getElementById('tb-aprov'),emA=document.getElementById('em-aprov');
+    if(aprovados.length===0){tbA.innerHTML='';emA.style.display='block';}
+    else{
+      emA.style.display='none';
+      tbA.innerHTML=aprovados.map(j=>`
+        <tr>
+          <td>${esc(j.nome)}</td>
+          <td><span class="nick-cell">${esc(j.nick)}</span></td>
+          <td style="color:var(--muted);font-size:11px;">${fmtDate(j.created_at || j.criado_em)}</td>
+          <td><button class="btn-sm red" onclick="remover(${j.id},'${esc(j.nick)}')">🗑 Remover</button></td>
+        </tr>`).join('');
+    }
+  } catch(err) {
+    console.error("Erro ao carregar dados do painel:", err);
+    toast('Erro de leitura do banco. Verifique as políticas de segurança.','err');
+  }
+}
+
+async function aprovar(id,nick){
+  if(!isAdminAuthenticated) return;
+  const{error}=await sb.from('jogadores').update({status:'aprovado'}).eq('id',id);
+  if(error){toast('Erro ao aprovar','err');return;}
+  toast(`${nick} aprovado ✅`,'ok');loadAdmin();
+}
+
+async function remover(id,nick){
+  if(!isAdminAuthenticated) return;
+  if(!confirm(`Remover ${nick}?`))return;
+  const{error}=await sb.from('jogadores').delete().eq('id',id);
+  if(error){toast('Erro ao remover','err');return;}
+  toast(`${nick} removido`,'inf');loadAdmin();
+}
+
+// CRUZAMENTO
+async function cruzar(){
+  if(!isAdminAuthenticated) return;
+  const raw=document.getElementById('log-inp').value.trim();
+  if(!raw){toast('Cole os nicks do log primeiro','err');return;}
+  const logNicks=[...new Set(raw.split('\n').map(n=>n.trim()).filter(Boolean))];
+  const logSet=new Set(logNicks.map(n=>n.toLowerCase()));
+  
+  const{data}=await sb.from('jogadores').select('*').eq('status','aprovado');
+  const aprovados=data||[];
+  const cadSet=new Set(aprovados.map(j=>j.nick.toLowerCase()));
+  const confirmados=aprovados.filter(j=>logSet.has(j.nick.toLowerCase()));
+  const ausentes=aprovados.filter(j=>!logSet.has(j.nick.toLowerCase()));
+  const desconheci
