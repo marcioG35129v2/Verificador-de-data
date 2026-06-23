@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  <!-- ════════════════════════════════════════
+       SECURITY HEADERS
+       Para produção, mover estes para cabeçalhos
+       HTTP no servidor (Nginx/Vercel/Cloudflare).
+  ════════════════════════════════════════ -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 script-src  'unsafe-inline' https://cdn.jsdelivr.net;
+                 style-src   'unsafe-inline' https://fonts.googleapis.com;
+                 font-src    https://fonts.gstatic.com;
+                 img-src     'self' https://minotar.net https://crafatar.com https://cravatar.eu https://mc-heads.net data:;
+                 connect-src https://*.supabase.co https://playerdb.co;
+                 frame-ancestors 'none';
+                 form-action 'self';
+                 base-uri    'self';">
+  <meta http-equiv="Referrer-Policy"   content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>PARADISE — Whitelist Guard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ════════════════════════════════════════
+       PARADISE — DESIGN TOKENS
+    ════════════════════════════════════════ */
+    :root {
+      --bg:    #0a0814;
+      --card:  rgba(255,255,255,0.055);
+      --card-h:rgba(255,255,255,0.09);
+      --rim:   rgba(255,255,255,0.10);
+      --rim2:  rgba(255,255,255,0.24);
+      --g:     #00e676;
+      --g2:    #69ffac;
+      --p:     #f72585;
+      --p2:    #ff6eb4;
+      --gold:  #ffd166;
+      --red:   #ff3355;
+      --blue:  #4d9fff;
+      --tx:    #ffffff;
+      --muted: #b8a8d0;
+      --sub:   #ddd4f0;
+      --blur:  blur(22px) saturate(160%);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100vh; }
+
+    body {
+      background: var(--bg);
+      color: var(--tx);
+      font-family: 'Space Grotesk', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 52px 16px 88px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── BACKGROUND SYSTEM ── */
+    .bg {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; overflow: hidden;
+    }
+    .bg::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 55% at 15% 10%,  rgba(247,37,133,0.20) 0%, transparent 55%),
+        radial-gradient(ellipse 55% 45% at 85% 85%,  rgba(0,230,118,0.14) 0%,  transparent 55%),
+        radial-gradient(ellipse 45% 40% at 55% 45%,  rgba(80,20,180,0.28) 0%,  transparent 65%),
+        linear-gradient(170deg, #0a0814 0%, #0f0c1e 50%, #080612 100%);
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(100px); pointer-events: none;
+      animation: orbDrift var(--d, 15s) ease-in-out infinite alternate;
+    }
+    .o1 { width:500px;height:500px;background:var(--p); top:-160px;left:-160px; --d:17s; opacity:.22; }
+    .o2 { width:400px;height:400px;background:var(--g); bottom:-120px;right:-120px; --d:21s; opacity:.16; }
+    .o3 { width:300px;height:300px;background:#7020d0; top:40%;left:58%; --d:25s; opacity:.22; }
+    @keyframes orbDrift {
+      from { transform: translate(0,0) scale(1); }
+      to   { transform: translate(50px,-50px) scale(1.2); }
+    }
+    .stars { position:absolute; inset:0; }
+    .star  {
+      position:absolute; border-radius:50%; background:#fff;
+      animation: twinkle var(--tw,3s) ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%,100% { opacity:.08; transform:scale(1);   }
+      50%     { opacity:var(--op,.65); transform:scale(1.3); }
+    }
+    body > *:not(.bg) { position:relative; z-index:1; }
+
+    /* ── ENTRANCE ── */
+    @keyframes up {
+      from { opacity:0; transform:translateY(22px); }
+      to   { opacity:1; transform:none; }
+    }
+    .a1 { animation: up .55s cubic-bezier(.16,1,.3,1) both; }
+    .a2 { animation: up .55s cubic-bezier(.16,1,.3,1) both .08s; }
+    .a3 { animation: up .55s cubic-bezier(.16,1,.3,1) both .16s; }
+
+    /* ── HERO ── */
+    .hero { text-align:center; margin-bottom:36px; }
+
+    .logo {
+      font-family:'Syne',sans-serif;
+      font-size: clamp(50px,11vw,92px);
+      font-weight:900; letter-spacing:-4px; line-height:1;
+      background: linear-gradient(128deg, var(--g) 0%, #fff 42%, var(--p) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+      position:relative; display:inline-block;
+    }
+    .logo::after {
+      content:'PARADISE';
+      position:absolute; inset:0;
+      background: linear-gradient(105deg,transparent 25%,rgba(255,255,255,.65) 50%,transparent 75%);
+      background-size:300% 100%;
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
+      animation: shimmer 4s ease-in-out infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position:300% 0; }
+      100% { background-position:-300% 0; }
+    }
+    .logo-dot {
+      display:inline-block; width:11px; height:11px; border-radius:50%;
+      background:var(--p); margin-left:6px;
+      box-shadow:0 0 18px var(--p);
+      vertical-align:middle; position:relative; top:-16px;
+      animation:dotPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%,100% { box-shadow:0 0 14px var(--p),0 0 28px rgba(247,37,133,.4); }
+      50%      { box-shadow:0 0 24px var(--p),0 0 52px rgba(247,37,133,.6); }
+    }
+    .tagline {
+      font-family:'Space Mono',monospace; font-size:11px;
+      color:var(--sub); letter-spacing:6px; text-transform:uppercase;
+      margin-top:10px; opacity:.65;
+    }
+
+    /* ── TICKER ── */
+    @keyframes tick { to { transform:translateX(-50%); } }
+    .ticker-wrap {
+      width:100%; max-width:740px; overflow:hidden;
+      background:rgba(255,255,255,0.04);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:99px;
+      padding:10px 0; margin-bottom:48px;
+      box-shadow:0 4px 24px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .ticker-track {
+      display:flex; white-space:nowrap;
+      animation:tick 30s linear infinite; will-change:transform;
+    }
+    .tick-item {
+      font-family:'Space Mono',monospace; font-size:11px;
+      color:var(--muted); padding:0 28px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .tick-item .g { color:var(--g); font-weight:700; }
+    .tick-item .p { color:var(--p); font-weight:700; }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display:grid; grid-template-columns:1fr;
+      gap:24px; width:100%; max-width:1120px;
+    }
+    @media(min-width:900px){ .layout{ grid-template-columns:1.1fr .9fr; } }
+
+    /* ── GLASS PANEL ── */
+    .panel {
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:24px;
+      padding:36px; position:relative; overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.07);
+      transition:border-color .3s;
+    }
+    .panel-line {
+      position:absolute; top:0; left:0; right:0; height:3px;
+      border-radius:24px 24px 0 0;
+      background:linear-gradient(90deg,var(--g),var(--p));
+    }
+    .panel::before {
+      content:''; position:absolute; top:0; left:44px; right:44px; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
+    }
+    .panel-title {
+      font-family:'Syne',sans-serif; font-size:22px;
+      font-weight:800; margin-bottom:28px; letter-spacing:-.4px;
+    }
+
+    /* ── INPUTS ── */
+    .mc-field { margin-bottom:22px; }
+    .mc-field label {
+      display:block; font-size:11px; font-weight:700;
+      color:var(--sub); text-transform:uppercase;
+      letter-spacing:1.5px; margin-bottom:8px; opacity:.8;
+    }
+    .mc-input-wrap { position:relative; }
+    .mc-input-wrap::before {
+      position:absolute; top:50%; left:16px;
+      transform:translateY(-50%); font-size:16px;
+      z-index:2; pointer-events:none; line-height:1;
+    }
+    .mc-field.name .mc-input-wrap::before { content:'📱'; }
+    .mc-field.nick .mc-input-wrap::before { content:'⚔️'; }
+    .mc-field.user .mc-input-wrap::before { content:'✉️'; }
+    .mc-field.pass .mc-input-wrap::before { content:'🔑'; }
+
+    .mc-input-wrap input {
+      width:100%; background:rgba(0,0,0,.38);
+      border:1px solid rgba(255,255,255,.13); border-radius:12px;
+      color:var(--tx); font-family:'Space Grotesk',sans-serif;
+      font-size:15px; font-weight:500;
+      padding:14px 16px 14px 48px; outline:none;
+      transition:border-color .2s, box-shadow .2s, background .2s;
+      -webkit-appearance:none;
+    }
+    .mc-input-wrap input::placeholder { color:var(--muted); opacity:.55; }
+    .mc-input-wrap input:focus {
+      border-color:var(--p); background:rgba(0,0,0,.52);
+      box-shadow:0 0 0 3px rgba(247,37,133,.14), 0 0 20px rgba(247,37,133,.18);
+    }
+    .mc-input-wrap input.ok {
+      border-color:var(--g);
+      box-shadow:0 0 0 3px rgba(0,230,118,.1), 0 0 18px rgba(0,230,118,.14);
+    }
+    .mc-input-wrap input.err {
+      border-color:var(--red);
+      box-shadow:0 0 0 3px rgba(255,51,85,.1);
+    }
+    .hint {
+      margin-top:8px; font-size:12px; color:var(--muted);
+      min-height:18px; display:flex; align-items:center; gap:8px;
+    }
+    .hint.ok  { color:var(--g);  font-weight:600; }
+    .hint.err { color:var(--red); font-weight:600; }
+    .avatar-img {
+      width:28px; height:28px; border-radius:6px; display:none;
+      image-rendering:pixelated; border:1px solid var(--rim2);
+    }
+    .plat {
+      font-family:'Space Mono',monospace; font-size:9px;
+      padding:3px 8px; border-radius:5px; font-weight:700;
+      text-transform:uppercase; display:none;
+    }
+    .plat.java    { background:rgba(0,230,118,.18); color:var(--g); border:1px solid rgba(0,230,118,.4); }
+    .plat.bedrock { background:rgba(247,37,133,.18); color:var(--p); border:1px solid rgba(247,37,133,.4); }
+    .plat.pirata  { background:rgba(255,209,102,.18); color:var(--gold); border:1px solid rgba(255,209,102,.4); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      width:100%; padding:15px 20px; border:none; border-radius:12px;
+      font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:700;
+      cursor:pointer; transition:transform .15s, box-shadow .15s, opacity .15s;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      margin-bottom:12px; position:relative; overflow:hidden;
+      letter-spacing:.3px;
+    }
+    .btn:active { transform:scale(.98); }
+    .btn:disabled { opacity:.38; cursor:not-allowed; transform:none !important; }
+    .btn-primary {
+      background:linear-gradient(135deg,var(--g) 0%,#00b356 100%);
+      color:#031a08; font-weight:800;
+      box-shadow:0 6px 24px rgba(0,230,118,.32);
+    }
+    .btn-primary::after {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(180deg,rgba(255,255,255,.16) 0%,transparent 100%);
+      pointer-events:none;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform:translateY(-2px);
+      box-shadow:0 10px 32px rgba(0,230,118,.44);
+    }
+    .btn-ghost {
+      background:rgba(255,255,255,.06); color:var(--tx);
+      border:1px solid var(--rim);
+    }
+    .btn-ghost:hover {
+      border-color:var(--p2); color:var(--p2);
+      background:rgba(247,37,133,.08); transform:translateY(-1px);
+    }
+    .btn-sm {
+      padding:8px 16px; border-radius:8px;
+      font-family:'Space Grotesk',sans-serif; font-size:12px; font-weight:700;
+      cursor:pointer; border:1px solid transparent;
+      transition:all .15s cubic-bezier(.16,1,.3,1); white-space:nowrap;
+    }
+    .btn-sm:active { transform:scale(.96); }
+    .btn-sm.r    { background:rgba(255,51,85,.12); color:var(--red); border-color:rgba(255,51,85,.28); }
+    .btn-sm.r:hover { background:var(--red); color:#fff; box-shadow:0 4px 14px rgba(255,51,85,.4); }
+    .btn-sm.g    { background:rgba(0,230,118,.12); color:var(--g); border-color:rgba(0,230,118,.28); }
+    .btn-sm.g:hover { background:var(--g); color:#031a08; box-shadow:0 4px 14px rgba(0,230,118,.4); }
+    .btn-sm.gold { background:rgba(255,209,102,.12); color:var(--gold); border-color:rgba(255,209,102,.28); }
+    .btn-sm.gold:hover { background:var(--gold); color:#1a0e00; box-shadow:0 4px 14px rgba(255,209,102,.4); }
+    .btn-sm.blue { background:rgba(77,159,255,.12); color:var(--blue); border-color:rgba(77,159,255,.28); }
+    .btn-sm.blue:hover { background:var(--blue); color:#fff; box-shadow:0 4px 14px rgba(77,159,255,.4); }
+
+    /* ── NOTICE ── */
+    .notice {
+      border:1px solid rgba(255,255,255,.09);
+      border-left:3px solid var(--p);
+      background:rgba(247,37,133,.05);
+      border-radius:4px 12px 12px 4px;
+      padding:14px 16px; font-size:13px;
+      color:var(--sub); line-height:1.65; margin:18px 0 12px;
+    }
+    .notice b { color:var(--tx); }
+    .divider {
+      display:flex; align-items:center; gap:12px;
+      margin:20px 0; color:var(--muted);
+      font-size:11px; text-transform:uppercase; letter-spacing:1.5px; opacity:.55;
+    }
+    .divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--rim); }
+
+    /* ── INFO CARDS ── */
+    .info-cards { display:flex; flex-direction:column; gap:14px; }
+    .icard {
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:18px;
+      padding:20px 22px; position:relative; overflow:hidden;
+      box-shadow:0 8px 28px rgba(0,0,0,.18);
+      transition:border-color .2s, transform .2s, background .2s;
+    }
+    .icard::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
+    }
+    .icard:hover { border-color:var(--rim2); background:var(--card-h); transform:translateY(-2px); }
+    .icard-icon { font-size:26px; margin-bottom:10px; line-height:1; }
+    .icard-title { font-size:14px; font-weight:700; color:var(--p2); margin-bottom:6px; }
+    .icard-title.g    { color:var(--g2); }
+    .icard-title.gold { color:var(--gold); }
+    .icard p { font-size:13px; color:var(--sub); line-height:1.6; }
+    .mini-stats {
+      display:grid; grid-template-columns:repeat(3,1fr);
+      gap:10px; margin-top:16px;
+    }
+    .mini-stat {
+      background:rgba(0,0,0,.3); border:1px solid var(--rim);
+      border-radius:12px; padding:12px; text-align:center;
+    }
+    .mini-stat-val {
+      font-family:'Space Mono',monospace; font-size:18px;
+      font-weight:700; color:var(--p2); line-height:1;
+    }
+    .mini-stat-lbl {
+      font-size:9px; color:var(--muted);
+      text-transform:uppercase; letter-spacing:1px; margin-top:5px;
+    }
+
+    /* ════════════════════════════════════════
+       ADMIN PANEL
+    ════════════════════════════════════════ */
+    #admin-panel {
+      width:100%; max-width:1120px; display:none;
+      animation:up .4s cubic-bezier(.16,1,.3,1);
+    }
+    .admin-top {
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:20px;
+      padding:18px 24px; margin-bottom:20px;
+      flex-wrap:wrap; gap:12px;
+      box-shadow:0 12px 36px rgba(0,0,0,.2);
+    }
+    .admin-top-left { display:flex; align-items:center; gap:14px; }
+    .live-dot {
+      width:8px; height:8px; border-radius:50%;
+      background:var(--g); box-shadow:0 0 10px var(--g);
+      animation:blink 2s infinite; flex-shrink:0;
+    }
+    @keyframes blink {
+      0%,100% { opacity:1; box-shadow:0 0 10px var(--g); }
+      50%      { opacity:.4; box-shadow:0 0 4px var(--g); }
+    }
+    .admin-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; }
+    .admin-email { font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); margin-top:2px; }
+    .admin-top-right { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+    /* STAT ROW */
+    .stat-row {
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(150px,1fr));
+      gap:14px; margin-bottom:20px;
+    }
+    .sbox {
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:18px;
+      padding:20px 22px;
+      box-shadow:0 8px 28px rgba(0,0,0,.15);
+    }
+    .sbox-lbl { font-size:10px; color:var(--sub); text-transform:uppercase; letter-spacing:1.5px; font-weight:700; opacity:.7; }
+    .sbox-val { font-family:'Space Mono',monospace; font-size:30px; font-weight:700; color:var(--tx); margin-top:6px; line-height:1; }
+    .sbox-sub { font-size:10px; color:var(--muted); margin-top:4px; }
+
+    /* TABS */
+    .tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .tab {
+      padding:10px 20px;
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:10px;
+      color:var(--muted); font-size:13px; font-weight:700;
+      cursor:pointer; transition:.15s; white-space:nowrap;
+    }
+    .tab:hover { color:var(--tx); border-color:var(--rim2); }
+    .tab.active { background:var(--p); color:#fff; border-color:var(--p); box-shadow:0 6px 18px rgba(247,37,133,.35); }
+
+    /* TABLE BOX */
+    .tbl-box {
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:20px;
+      overflow:hidden; margin-bottom:20px;
+      box-shadow:0 16px 48px rgba(0,0,0,.2);
+    }
+    .tbl-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 22px; border-bottom:1px solid var(--rim);
+      flex-wrap:wrap; gap:10px;
+    }
+    .tbl-title { font-size:14px; font-weight:700; }
+    .tbl-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .tbl-scroll { overflow-x:auto; width:100%; }
+
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th {
+      background:rgba(0,0,0,.22); padding:12px 20px;
+      font-size:10px; color:var(--muted); text-transform:uppercase;
+      letter-spacing:1.5px; font-weight:700;
+      border-bottom:1px solid var(--rim); white-space:nowrap;
+    }
+    td {
+      padding:14px 20px; border-bottom:1px solid rgba(255,255,255,.05);
+      vertical-align:middle; font-size:14px; transition:background .15s;
+    }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:rgba(255,255,255,.03); }
+    .pcell { display:flex; align-items:center; gap:12px; }
+    .pcell img {
+      width:36px; height:36px; border-radius:8px;
+      image-rendering:pixelated; background:rgba(0,0,0,.5);
+      border:1px solid var(--rim); flex-shrink:0;
+    }
+    .pnick { font-family:'Space Mono',monospace; font-weight:700; font-size:14px; color:var(--p2); }
+    .search-inp {
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.14);
+      color:var(--tx); font-family:'Space Grotesk',sans-serif;
+      font-size:13px; padding:8px 14px; border-radius:10px;
+      outline:none; transition:border-color .15s, box-shadow .15s;
+      width:200px; max-width:100%;
+    }
+    .search-inp:focus { border-color:var(--p); box-shadow:0 0 0 3px rgba(247,37,133,.12); }
+
+    /* PENDING CARDS */
+    .cards-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(275px,1fr)); gap:16px; margin-bottom:20px; }
+    .pcard {
+      background:var(--card);
+      backdrop-filter:var(--blur); -webkit-backdrop-filter:var(--blur);
+      border:1px solid var(--rim); border-radius:18px; padding:22px;
+      transition:all .3s cubic-bezier(.16,1,.3,1);
+      position:relative; overflow:hidden;
+      box-shadow:0 8px 24px rgba(0,0,0,.15);
+    }
+    .pcard:hover { border-color:var(--rim2); transform:translateY(-2px); box-shadow:0 14px 32px rgba(0,0,0,.25); }
+    .pcard-top { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+    .pcard-top img { width:46px; height:46px; border-radius:10px; image-rendering:pixelated; background:rgba(0,0,0,.5); border:1px solid var(--rim); }
+    .pcard-nick { font-family:'Space Mono',monospace; font-weight:700; font-size:15px; }
+    details.deta { margin-bottom:14px; }
+    details.deta summary {
+      cursor:pointer; font-size:12px; font-weight:700; color:var(--muted);
+      list-style:none; display:flex; align-items:center; gap:6px; outline:none; user-select:none;
+    }
+    details.deta summary::-webkit-details-marker { display:none; }
+    details.deta summary::before { content:'▶'; font-size:9px; color:var(--p2); transition:transform .15s; }
+    details.deta[open] summary::before { transform:rotate(90deg); }
+    .deta-body {
+      background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.07);
+      border-radius:10px; padding:12px; margin-top:8px;
+      font-size:12px; color:var(--muted); line-height:1.75;
+    }
+    .deta-body strong { color:var(--tx); }
+    .card-btns { display:flex; flex-direction:column; gap:8px; }
+    .cbn {
+      padding:10px 14px; border-radius:10px;
+      font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:700;
+      cursor:pointer; border:1px solid; transition:all .15s; width:100%;
+    }
+    .cbn-ok     { background:rgba(0,230,118,.12); color:var(--g); border-color:rgba(0,230,118,.32); }
+    .cbn-ok:hover { background:var(--g); color:#031a08; box-shadow:0 4px 14px rgba(0,230,118,.32); }
+    .cbn-reject { background:rgba(255,51,85,.12); color:var(--red); border-color:rgba(255,51,85,.32); }
+    .cbn-reject:hover { background:var(--red); color:#fff; box-shadow:0 4px 14px rgba(255,51,85,.32); }
+    .cbn-ban    { background:rgba(255,209,102,.12); color:var(--gold); border-color:rgba(255,209,102,.32); }
+    .cbn-ban:hover { background:var(--gold); color:#1a0e00; box-shadow:0 4px 14px rgba(255,209,102,.32); }
+    .spam-tag {
+      background:rgba(255,209,102,.12); border:1px dashed var(--gold);
+      border-radius:5px; padding:3px 8px; color:var(--gold);
+      font-size:9px; font-family:'Space Mono',monospace; font-weight:700;
+    }
+    .badge {
+      font-family:'Space Mono',monospace; font-size:9px;
+      padding:3px 8px; border-radius:5px; font-weight:700; text-transform:uppercase;
+      display:inline-flex; align-items:center; gap:4px; white-space:nowrap; letter-spacing:.5px;
+    }
+    .dot { width:5px; height:5px; border-radius:50%; background:currentColor; }
+    .badge-java    { background:rgba(0,230,118,.14); color:var(--g); border:1px solid rgba(0,230,118,.32); }
+    .badge-bedrock { background:rgba(247,37,133,.14); color:var(--p2); border:1px solid rgba(247,37,133,.32); }
+    .badge-pirata  { background:rgba(255,209,102,.14); color:var(--gold); border:1px solid rgba(255,209,102,.32); }
+
+    /* CRUZAMENTO */
+    .log-ta {
+      width:100%; height:120px; background:rgba(0,0,0,.32);
+      border:1px solid var(--rim); border-radius:12px;
+      color:#fff; font-family:'Space Mono',monospace; font-size:13px;
+      padding:14px; margin-bottom:16px; outline:none; resize:none;
+      transition:border-color .2s;
+    }
+    .log-ta:focus { border-color:var(--p); box-shadow:0 0 0 3px rgba(247,37,133,.1); }
+    .cross-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-top:24px; }
+    .cross-card { background:rgba(0,0,0,.22); border:1px solid var(--rim); border-radius:14px; padding:16px; }
+    .cross-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-weight:700; font-size:13px; border-bottom:1px solid var(--rim); padding-bottom:10px; }
+    .cross-list { display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; }
+    .cross-item { display:flex; justify-content:space-between; align-items:center; padding:8px 10px; background:rgba(255,255,255,.03); border-radius:8px; }
+    .c-nick { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; }
+    .c-sub  { font-size:10px; color:var(--muted); margin-top:2px; }
+
+    /* EMPTY */
+    .empty { text-align:center; padding:44px 20px; color:var(--muted); font-size:14px; line-height:1.7; }
+    .empty-icon { font-size:34px; margin-bottom:10px; opacity:.45; }
+
+    /* EXIT ANIMS */
+    .pcard-exit { animation:cardExit .35s cubic-bezier(.16,1,.3,1) forwards; }
+    @keyframes cardExit { to { transform:scale(.88); opacity:0; max-height:0; padding:0; margin:0; border:none; } }
+    .row-exit { animation:rowExit .3s ease forwards; }
+    @keyframes rowExit { to { opacity:0; transform:translateX(-18px); height:0; padding:0; } }
+    .glow-approve { animation:glowOk .55s ease forwards; }
+    @keyframes glowOk {
+      50% { box-shadow:0 0 30px rgba(0,230,118,.55), inset 0 0 20px rgba(0,230,118,.22); border-color:var(--g); }
+    }
+
+    /* TOAST */
+    #toast {
+      position:fixed; bottom:24px; right:20px;
+      padding:14px 22px; border-radius:12px; font-size:13px; font-weight:700;
+      display:none; z-index:9999; max-width:300px;
+      box-shadow:0 16px 48px rgba(0,0,0,.42);
+      border:1px solid; backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    }
+    .toast-show { animation:toastIn .25s cubic-bezier(.16,1,.3,1); }
+    @keyframes toastIn { from { opacity:0; transform:translateX(16px); } to { opacity:1; transform:none; } }
+    #toast.ok  { background:rgba(4,18,10,.9); color:var(--g); border-color:rgba(0,230,118,.38); }
+    #toast.err { background:rgba(18,4,8,.9); color:var(--red); border-color:rgba(255,51,85,.38); }
+    #toast.inf { background:rgba(10,8,22,.9); color:var(--p2); border-color:rgba(247,37,133,.38); }
+
+    /* RESPONSIVE */
+    @media(max-width:640px){
+      body { padding:24px 12px 64px; }
+      .panel { padding:24px 18px; }
+      .admin-top { padding:14px; }
+      table,thead,tbody,th,td,tr { display:block; width:100%!important; }
+      thead tr { display:none; }
+      tr { margin-bottom:12px; border:1px solid var(--rim); border-radius:14px; background:rgba(255,255,255,.03); padding:14px; }
+      td { padding:9px 0; border:none; width:100%!important; display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+      td::before { content:attr(data-label); font-size:10px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:1px; flex-shrink:0; }
+      td[data-label="AÇÕES"] { flex-direction:column; gap:8px; border-top:1px solid var(--rim); padding-top:12px; margin-top:4px; }
+      .search-inp { width:100%; }
+      .stat-row { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ BACKGROUND ══ -->
+<div class="bg" aria-hidden="true">
+  <div class="o1 orb"></div>
+  <div class="o2 orb"></div>
+  <div class="o3 orb"></div>
+  <div class="stars" id="stars"></div>
+</div>
+
+<!-- ══ HERO ══ -->
+<div class="hero a1">
+  <div class="logo" role="heading" aria-level="1">PARADISE<span class="logo-dot"></span></div>
+  <div class="tagline">Whitelist Guard &nbsp;·&nbsp; v3.2</div>
+</div>
+
+<!-- ══ TICKER ══ -->
+<div class="ticker-wrap a2" id="ticker-rail" aria-hidden="true">
+  <div class="ticker-track">
+    <span class="tick-item">🛡 Anti-Spam <span class="g">ATIVO</span></span>
+    <span class="tick-item">🪄 Piratas <span class="g">PERMITIDOS</span></span>
+    <span class="tick-item">⚡ Java &amp; Bedrock <span class="p">CROSSPLAY</span></span>
+    <span class="tick-item">🌟 Whitelist <span class="g" id="tick-count">a carregar…</span></span>
+    <span class="tick-item">⛏ Survival <span class="p">ATIVO</span></span>
+    <span class="tick-item">🛡 Anti-Spam <span class="g">ATIVO</span></span>
+    <span class="tick-item">🪄 Piratas <span class="g">PERMITIDOS</span></span>
+    <span class="tick-item">⚡ Java &amp; Bedrock <span class="p">CROSSPLAY</span></span>
+    <span class="tick-item">🌟 PARADISE <span class="g">MC</span></span>
+    <span class="tick-item">⛏ Survival <span class="p">ATIVO</span></span>
+  </div>
+</div>
+
+<!-- ══ LAYOUT ══ -->
+<div class="layout a3" id="layout">
+
+  <!-- LEFT: FORMULÁRIO -->
+  <div>
+    <!-- REGISTRO -->
+    <div class="panel" id="register-view">
+      <div class="panel-line"></div>
+      <div class="panel-title">✦ Solicitar Acesso</div>
+
+      <div class="mc-field name">
+        <label for="inp-nome">Nome / WhatsApp</label>
+        <div class="mc-input-wrap" id="wrap-nome">
+          <input type="text" id="inp-nome"
+                 oninput="valNome()"
+                 placeholder="Como entrar em contacto"
+                 autocomplete="name"
+                 maxlength="80"
+                 spellcheck="false"
+                 aria-label="Nome ou WhatsApp para contacto"
+                 aria-describedby="h-nome">
+        </div>
+        <div class="hint" id="h-nome" role="status" aria-live="polite">Idêntico ao nome cadastrado para notificações</div>
+      </div>
+
+      <div class="mc-field nick">
+        <label for="inp-nick">Nickname no Minecraft</label>
+        <div class="mc-input-wrap" id="wrap-nick">
+          <input type="text" id="inp-nick"
+                 oninput="valNick()"
+                 placeholder="Ex: Notch, Gamer_Pirata"
+                 autocomplete="off"
+                 maxlength="36"
+                 spellcheck="false"
+                 aria-label="Nickname no Minecraft"
+                 aria-describedby="h-nick">
+        </div>
+        <div class="hint" id="h-nick" role="status" aria-live="polite">
+          <img class="avatar-img" id="mc-avatar" src="" alt="Avatar do jogador">
+          <span id="txt-nick">Java · Bedrock · Pirata — todos aceites</span>
+          <span class="plat" id="tag-plat" aria-label="Plataforma detectada"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-cad" onclick="cadastrar()" disabled aria-live="polite">
+        🌟 Enviar Solicitação
+      </button>
+
+      <div class="notice" role="note">
+        <b>🔐 Segurança:</b> Terminais com mais de 3 registos em sequência são bloqueados permanentemente via fingerprint de dispositivo.
+      </div>
+
+      <div class="divider" aria-hidden="true">área restrita</div>
+
+      <button class="btn btn-ghost" onclick="showAdminLogin()" aria-label="Aceder ao painel administrativo">
+        👑 Painel Administrativo
+      </button>
+    </div>
+
+    <!-- LOGIN ADMIN -->
+    <div class="panel" id="login-view" style="display:none;" role="dialog" aria-modal="true" aria-label="Login Administrativo">
+      <div class="panel-line" style="background:linear-gradient(90deg,var(--gold),var(--p))"></div>
+      <div class="panel-title" style="color:var(--gold)">🔒 Acesso Restrito</div>
+
+      <div class="mc-field user">
+        <label for="inp-user">Email do Administrador</label>
+        <div class="mc-input-wrap" id="wrap-user">
+          <input type="email" id="inp-user"
+                 autocomplete="username"
+                 placeholder="admin@paradise.mc"
+                 maxlength="120"
+                 aria-label="Email do administrador">
+        </div>
+      </div>
+
+      <div class="mc-field pass">
+        <label for="inp-pass">Senha</label>
+        <div class="mc-input-wrap" id="wrap-pass">
+          <input type="password" id="inp-pass"
+                 onkeydown="if(event.key==='Enter')doLogin()"
+                 placeholder="••••••••"
+                 autocomplete="current-password"
+                 maxlength="128"
+                 aria-label="Senha do administrador">
+        </div>
+        <div class="hint err" id="h-pass"    style="display:none;" role="alert">❌ Credenciais inválidas.</div>
+        <div class="hint err" id="h-lockout" style="display:none;" role="alert">🔒 Conta bloqueada temporariamente.</div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()"
+        style="background:linear-gradient(135deg,var(--gold),#b07f00);color:#0d0800;box-shadow:0 6px 22px rgba(255,209,102,.28);">
+        🔓 Autenticar
+      </button>
+      <button class="btn btn-ghost" onclick="showRegister()">← Voltar</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: INFO -->
+  <div id="side-info">
+    <div class="info-cards">
+      <div class="icard">
+        <div class="icard-icon">🪐</div>
+        <div class="icard-title">Crossplay Livre</div>
+        <p>Java, Bedrock e Pirata jogam juntos sem restrições de plataforma.</p>
+      </div>
+      <div class="icard">
+        <div class="icard-icon">💰</div>
+        <div class="icard-title g">Economia &amp; Survival</div>
+        <p>Economia gerida pelos jogadores, lojas dinâmicas e eventos diários.</p>
+      </div>
+      <div class="icard">
+        <div class="icard-icon">⚡</div>
+        <div class="icard-title gold">Alta Performance</div>
+        <p>Servidores NVMe dedicados. TPS 20. Disponível 24/7 sem lag.</p>
+      </div>
+      <div class="icard">
+        <div class="icard-icon">🛡️</div>
+        <div class="icard-title">Whitelist Guard</div>
+        <p>Fingerprint criptográfico isola invasores e infratores automaticamente.</p>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <div class="mini-stat-val">24/7</div>
+          <div class="mini-stat-lbl">Online</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-val" style="color:var(--g)">1.21</div>
+          <div class="mini-stat-lbl">Versão</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-val" style="color:var(--gold)" id="side-count">—</div>
+          <div class="mini-stat-lbl">Jogadores</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN PANEL ══ -->
+<div id="admin-panel" role="main" aria-label="Painel Administrativo">
+  <!-- TOP BAR -->
+  <div class="admin-top">
+    <div class="admin-top-left">
+      <div class="live-dot" aria-hidden="true"></div>
+      <div>
+        <div class="admin-title">Dashboard <span style="color:var(--p)">PARADISE</span></div>
+        <div class="admin-email" id="admin-email-display">—</div>
+      </div>
+    </div>
+    <div class="admin-top-right">
+      <button class="btn-sm blue" onclick="refreshAdmin()" aria-label="Recarregar dados">↻ Atualizar</button>
+      <button class="btn-sm gold" onclick="exportarWhitelist()" aria-label="Exportar whitelist.json">📥 Exportar</button>
+      <button class="btn-sm r"    onclick="doLogout()" aria-label="Terminar sessão">⏻ Sair</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-row" role="region" aria-label="Estatísticas">
+    <div class="sbox" style="border-color:rgba(0,230,118,.22);">
+      <div class="sbox-lbl" style="color:var(--g)">✅ Aprovados</div>
+      <div class="sbox-val" id="count-aprov">0</div>
+      <div class="sbox-sub">na whitelist</div>
+    </div>
+    <div class="sbox" style="border-color:rgba(247,37,133,.22);">
+      <div class="sbox-lbl" style="color:var(--p)">⏳ Pendentes</div>
+      <div class="sbox-val" id="count-pend">0</div>
+      <div class="sbox-sub">aguardando revisão</div>
+    </div>
+    <div class="sbox" style="border-color:rgba(255,209,102,.22);">
+      <div class="sbox-lbl" style="color:var(--gold)">⛔ Banidos</div>
+      <div class="sbox-val" id="count-ban">0</div>
+      <div class="sbox-sub">terminais bloqueados</div>
+    </div>
+    <div class="sbox" style="border-color:rgba(77,159,255,.22);">
+      <div class="sbox-lbl" style="color:var(--blue)">📅 Hoje</div>
+      <div class="sbox-val" id="count-hoje">0</div>
+      <div class="sbox-sub">novos registos</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" role="tablist">
+    <div class="tab active" id="tab-db"    onclick="switchTab('db')"    role="tab" aria-selected="true">🗃 Jogadores</div>
+    <div class="tab"        id="tab-logs"  onclick="switchTab('logs')"  role="tab" aria-selected="false">🔍 Cruzamento</div>
+    <div class="tab"        id="tab-bans"  onclick="switchTab('bans')"  role="tab" aria-selected="false">⛔ Banidos (<span id="count-ban-tab">0</span>)</div>
+    <div class="tab"        id="tab-audit" onclick="switchTab('audit')" role="tab" aria-selected="false">📋 Histórico</div>
+  </div>
+
+  <!-- TAB: JOGADORES -->
+  <div id="area-db" role="tabpanel">
+    <div style="margin-bottom:20px;">
+      <div class="tbl-head" style="background:var(--card);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--rim);border-radius:16px;margin-bottom:12px;">
+        <span class="tbl-title" style="color:var(--gold)">⏳ Pedidos Pendentes</span>
+      </div>
+      <div id="grid-pendentes" class="cards-grid">
+        <div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div>Nenhuma solicitação pendente.</div>
+      </div>
+    </div>
+
+    <div class="tbl-box">
+      <div class="tbl-head">
+        <span class="tbl-title" style="color:var(--g)">✅ Whitelist Ativa</span>
+        <div class="tbl-actions">
+          <input type="text" class="search-inp" id="admin-search"
+                 placeholder="🔍 Buscar nick…"
+                 oninput="filtrarAprovados()"
+                 maxlength="36"
+                 aria-label="Filtrar jogadores">
+        </div>
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead><tr><th>Jogador</th><th>Contacto</th><th>Plataforma</th><th>Ingresso</th><th>Ações</th></tr></thead>
+          <tbody id="tb-aprov"></tbody>
+        </table>
+        <div id="em-aprov" class="empty"><div class="empty-icon">👥</div>Nenhum jogador na whitelist ainda.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: CRUZAMENTO -->
+  <div id="area-logs" class="panel" style="max-width:100%;display:none;" role="tabpanel">
+    <div class="panel-title" style="font-size:17px;margin-bottom:6px;">🔍 Cruzamento de Dados</div>
+    <p style="color:var(--sub);font-size:13px;margin-bottom:16px;">Cole os nicknames do log da consola para varredura de invasores.</p>
+    <textarea id="log-inp" class="log-ta"
+              placeholder="Nick1&#10;Nick2&#10;..."
+              aria-label="Nicknames para cruzamento"
+              maxlength="50000"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-primary" style="max-width:200px;margin-bottom:0;" onclick="ejecutarCruzamento()">⚡ Iniciar Varredura</button>
+      <button class="btn btn-ghost"   style="max-width:120px;margin-bottom:0;" onclick="limparCross()">Limpar</button>
+    </div>
+    <div class="cross-grid" id="cross-results" style="display:none;"></div>
+  </div>
+
+  <!-- TAB: BANIDOS -->
+  <div id="area-bans" class="tbl-box" style="display:none;" role="tabpanel">
+    <div class="tbl-head">
+      <span class="tbl-title" style="color:var(--red)">⛔ Terminais Bloqueados</span>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Hash Fingerprint</th><th>Motivo</th><th>Data</th><th>Ações</th></tr></thead>
+        <tbody id="tb-bans"></tbody>
+      </table>
+      <div id="em-bans" class="empty"><div class="empty-icon">🛡️</div>Nenhum terminal banido.</div>
+    </div>
+  </div>
+
+  <!-- TAB: HISTÓRICO/AUDIT -->
+  <div id="area-audit" class="tbl-box" style="display:none;" role="tabpanel">
+    <div class="tbl-head">
+      <span class="tbl-title" style="color:var(--blue)">📋 Histórico de Ações</span>
+      <button class="btn-sm r" onclick="limparAudit()">Limpar histórico</button>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>Ação</th><th>Nick</th><th>Data</th></tr></thead>
+        <tbody id="tb-audit"></tbody>
+      </table>
+      <div id="em-audit" class="empty"><div class="empty-icon">📋</div>Nenhum registo no histórico.</div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="assertive"></div>
+
+<script>
+  /* ═══════════════════════════════════════════════════════════
+     SUPABASE
+     A chave anon é pública por design no Supabase.
+     OBRIGATÓRIO: RLS activo em TODAS as tabelas.
+       jogadores  → anon: SELECT/INSERT; service_role: tudo
+       banidos    → anon: SELECT; service_role: tudo
+       audit_log  → anon: sem acesso; service_role: tudo
+  ═══════════════════════════════════════════════════════════ */
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://epiunatlgdejbtkdqjqg.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwaXVuYXRsZ2RlamJ0a2RxanFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNTQzNDgsImV4cCI6MjA5NzYzMDM0OH0.Pqu_zFslHpg157SF7_EXiJCAoxoxTFf9KnTGrT9YT2g'
+  );
+
+  let listaAprovadosCompleta = [], filtradosAprovados = [];
+  let nomeOk = false, nickOk = false, nickTimer;
+  let plataformaAtual = 'Pirata';
+  let avatarAtual     = 'https://minotar.net/helm/Steve/50.png';
+  let terminalFingerprint = '';
+
+  /* ════════════════════════════════════════
+     SECURITY UTILITIES
+  ════════════════════════════════════════ */
+
+  /* XSS — escapa HTML antes de inserir no DOM */
+  function esc(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#x27;').replace(/\//g,'&#x2F;');
+  }
+
+  /* IDs seguros — impede NaN/float/injecções */
+  function safeId(v) {
+    const n = parseInt(v, 10);
+    if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) throw new Error('ID inválido');
+    return n;
+  }
+
+  /* Allowlist de domínios para imagens de avatar */
+  const ALLOWED_IMG_HOSTS = ['minotar.net','crafatar.com','cravatar.eu','mc-heads.net'];
+  function safeImgUrl(url, fallback) {
+    if (!url) return fallback;
+    try {
+      const u = new URL(url);
+      if (!['http:','https:'].includes(u.protocol)) return fallback;
+      if (!ALLOWED_IMG_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.'+h))) return fallback;
+      return url;
+    } catch { return fallback; }
+  }
+
+  /* UUID v4 real via Web Crypto (para exportar whitelist) */
+  function uuid4() {
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.from(b).map(x => x.toString(16).padStart(2,'0')).join('');
+    return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+  }
+
+  /* Rate limiter para login (evita brute-force) */
+  const loginRL = {
+    _k: '_pdrl',
+    _get() { try { return JSON.parse(localStorage.getItem(this._k))||{n:0,t:0}; } catch{return{n:0,t:0};} },
+    _set(d) { try { localStorage.setItem(this._k, JSON.stringify(d)); } catch{} },
+    isLocked() { return this._get().t > Date.now(); },
+    remaining() { return Math.max(0, Math.ceil((this._get().t - Date.now())/1000)); },
+    fail() {
+      const d = this._get(); d.n = (d.n||0)+1;
+      if (d.n >= 5) { d.t = Date.now()+300000; d.n=0; } // 5 min lock
+      this._set(d);
+    },
+    reset() { this._set({n:0,t:0}); }
+  };
+
+  /* ════════════════════════════════════════
+     EVENT DELEGATION — Substitui onclick com
+     dados do utilizador (evita XSS via
+     injecção em atributos HTML de evento)
+  ════════════════════════════════════════ */
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    try {
+      const id = btn.dataset.id ? safeId(btn.dataset.id) : null;
+      // Fingerprint: apenas hex, máx 64 chars
+      const fp = btn.dataset.fp
+        ? String(btn.dataset.fp).replace(/[^a-f0-9]/gi,'').slice(0,64)
+        : '';
+      switch(action) {
+        case 'aprovar':        aprovarCard(id, btn);       break;
+        case 'recusar':        recusarCard(id, btn);       break;
+        case 'remover':        removerAprovado(id, btn);   break;
+        case 'banir-lista':    banirDaLista(fp, id, btn);  break;
+        case 'banir-terminal': banirTerminal(fp, id, btn); break;
+        case 'desbanir':       desbanir(id);               break;
+      }
+    } catch { toast('Ação inválida.', 'err'); }
+  });
+
+  /* ════════════════════════════════════════
+     FINGERPRINT — persistido em localStorage
+     para consistência entre sessões
+  ════════════════════════════════════════ */
+  (async () => {
+    const stored = localStorage.getItem('_pdfp');
+    if (stored && /^[a-f0-9]{32}$/.test(stored)) {
+      terminalFingerprint = stored; return;
+    }
+    const raw = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width, screen.height,
+      navigator.hardwareConcurrency || '',
+      navigator.deviceMemory || '',
+      Intl.DateTimeFormat().resolvedOptions().timeZone
+    ].join('|');
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    terminalFingerprint = Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2,'0')).join('').slice(0,32);
+    try { localStorage.setItem('_pdfp', terminalFingerprint); } catch{}
+  })();
+
+  /* ════════════════════════════════════════
+     RESTAURAÇÃO DE SESSÃO — admin continua
+     logado após refresh sem precisar autenticar
+  ════════════════════════════════════════ */
+  (async () => {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) {
+        document.getElementById('register-view').style.display = 'none';
+        document.getElementById('ticker-rail').style.display   = 'none';
+        document.getElementById('layout').style.display        = 'none';
+        document.getElementById('admin-panel').style.display   = 'block';
+        document.getElementById('admin-email-display').textContent = session.user.email;
+        await loadAdminDados();
+      }
+    } catch { /* sem sessão activa */ }
+  })();
+
+  /* ── CONTADOR PÚBLICO ── */
+  (async () => {
+    try {
+      const { count } = await sb.from('jogadores')
+        .select('*',{count:'exact',head:true}).eq('status','aprovado');
+      const n = count||0;
+      document.getElementById('tick-count').textContent = n+' Jogadores';
+      document.getElementById('side-count').textContent = n;
+    } catch{}
+  })();
+
+  /* ── STARS ── */
+  (function() {
+    const c = document.getElementById('stars');
+    const frag = document.createDocumentFragment();
+    for (let i=0; i<90; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const sz = Math.random()*2+1;
+      s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;--op:${(Math.random()*.55+.25).toFixed(2)};--tw:${(Math.random()*3+2).toFixed(1)}s;animation-delay:${(Math.random()*5).toFixed(1)}s`;
+      frag.appendChild(s);
+    }
+    c.appendChild(frag);
+  })();
+
+  /* ════════════════════════════════════════
+     VALIDAÇÃO
+  ════════════════════════════════════════ */
+  function valNome() {
+    const v = document.getElementById('inp-nome').value.trim();
+    const h = document.getElementById('h-nome');
+    const i = document.getElementById('inp-nome');
+    if (v.length < 2 || v.length > 80) {
+      nomeOk = false; i.className = 'err';
+      h.textContent = 'Preenche um nome válido (2–80 caracteres)'; h.className = 'hint err';
+    } else {
+      nomeOk = true; i.className = 'ok';
+      h.textContent = '✓ Perfeito!'; h.className = 'hint ok';
+    }
+    updateBtn();
+  }
+
+  function valNick() {
+    const v   = document.getElementById('inp-nick').value.trim();
+    const txt = document.getElementById('txt-nick');
+    const h   = document.getElementById('h-nick');
+    const i   = document.getElementById('inp-nick');
+    clearTimeout(nickTimer);
+    document.getElementById('mc-avatar').style.display = 'none';
+    document.getElementById('tag-plat').style.display  = 'none';
+    if (v.length < 3) {
+      nickOk = false; i.className = 'err';
+      txt.textContent = 'Mínimo 3 caracteres'; h.className = 'hint err';
+      updateBtn(); return;
+    }
+    if (v.length > 36 || !/^[\w\.\*\-]+$/.test(v)) {
+      nickOk = false; i.className = 'err';
+      txt.textContent = 'Nick inválido (letras, números, _ . - * apenas)'; h.className = 'hint err';
+      updateBtn(); return;
+    }
+    txt.textContent = '⏳ A verificar…'; h.className = 'hint'; i.className = '';
+    nickOk = false; updateBtn();
+    nickTimer = setTimeout(() => checarAPIs(v), 750);
+  }
+
+  async function checarAPIs(nick) {
+    const h      = document.getElementById('h-nick');
+    const txt    = document.getElementById('txt-nick');
+    const i      = document.getElementById('inp-nick');
+    const avatar = document.getElementById('mc-avatar');
+    const tag    = document.getElementById('tag-plat');
+    const defAv  = 'https://minotar.net/helm/Steve/50.png';
+    try {
+      const { data: banCheck } = await sb.from('banidos')
+        .select('hash').eq('hash', terminalFingerprint).maybeSingle();
+      if (banCheck) {
+        nickOk = false; i.className = 'err'; h.className = 'hint err';
+        txt.textContent = '❌ Terminal bloqueado permanentemente.';
+        updateBtn(); return;
+      }
+      let nickCorreto = nick;
+      plataformaAtual = 'Pirata';
+      avatarAtual = `https://minotar.net/helm/${encodeURIComponent(nick.replace(/[^a-zA-Z0-9_]/g,''))}/50.png`;
+      try {
+        const r = await fetch(`https://playerdb.co/api/player/minecraft/${encodeURIComponent(nick)}`);
+        const d = await r.json();
+        if (d.code === 'player.found') {
+          plataformaAtual = 'Java';
+          nickCorreto = d.data.player.username;
+          avatarAtual = safeImgUrl(d.data.player.avatar, avatarAtual);
+        } else {
+          const r2 = await fetch(`https://playerdb.co/api/player/xbox/${encodeURIComponent(nick.replace(/^[\.\*\_]/,''))}`);
+          const d2 = await r2.json();
+          if (d2.code === 'player.found') {
+            plataformaAtual = 'Bedrock';
+            avatarAtual = safeImgUrl(d2.data.player.avatar, avatarAtual);
+          }
+        }
+      } catch { /* API offline — usa Pirata */ }
+
+      const { data: dbData } = await sb.from('jogadores')
+        .select('nick').ilike('nick', nickCorreto).maybeSingle();
+      if (dbData) {
+        nickOk = false; i.className = 'err'; h.className = 'hint err';
+        txt.textContent = '❌ Nick já tem registo.';
+      } else {
+        nickOk = true; i.className = 'ok'; h.className = 'hint ok';
+        document.getElementById('inp-nick').value = nickCorreto;
+        txt.textContent = '✓ ' + esc(nickCorreto);
+        avatar.src = safeImgUrl(avatarAtual, defAv);
+        avatar.style.display = 'inline-block';
+        avatar.onerror = () => { avatar.src = defAv; };
+        tag.textContent   = plataformaAtual;
+        tag.className     = 'plat ' + plataformaAtual.toLowerCase();
+        tag.style.display = 'inline-block';
+      }
+    } catch {
+      nickOk = false; i.className = 'err'; h.className = 'hint err';
+      txt.textContent = '⚠️ Erro de ligação.';
+    }
+    updateBtn();
+  }
+
+  function updateBtn() {
+    document.getElementById('btn-cad').disabled = !(nomeOk && nickOk);
+  }
+
+  /* ════════════════════════════════════════
+     CADASTRO
+  ════════════════════════════════════════ */
+  async function cadastrar() {
+    const nome = document.getElementById('inp-nome').value.trim().slice(0, 80);
+    const nick = document.getElementById('inp-nick').value.trim().slice(0, 36);
+    const btn  = document.getElementById('btn-cad');
+
+    // Validação final antes de enviar
+    if (!nome || nome.length < 2) { toast('Nome inválido.', 'err'); return; }
+    if (!nick || nick.length < 3 || !/^[\w\.\*\-]+$/.test(nick)) {
+      toast('Nick inválido.', 'err'); return;
+    }
+
+    btn.disabled = true; btn.textContent = 'A enviar…';
+    try {
+      const { data: envios } = await sb.from('jogadores')
+        .select('id').eq('fingerprint', terminalFingerprint);
+      if (envios && envios.length >= 3) {
+        await sb.from('banidos').insert([{
+          hash: terminalFingerprint,
+          motivo: 'Múltiplos registos abusivos (>3)',
+          created_at: new Date().toISOString()
+        }]);
+        toast('Terminal bloqueado por actividade suspeita.', 'err');
+        setTimeout(() => location.reload(), 2500); return;
+      }
+      const { error } = await sb.from('jogadores').insert([{
+        nome, nick,
+        status: 'pendente',
+        plataforma: plataformaAtual,
+        avatar_url: safeImgUrl(avatarAtual, 'https://minotar.net/helm/Steve/50.png'),
+        fingerprint: terminalFingerprint,
+        created_at: new Date().toISOString()
+      }]);
+      if (error) {
+        toast('Erro ao registar. Tenta novamente.', 'err');
+      } else {
+        toast('🌟 Solicitação enviada! Aguarda aprovação.', 'ok');
+        ['inp-nome','inp-nick'].forEach(id => {
+          document.getElementById(id).value = '';
+          document.getElementById(id).className = '';
+        });
+        document.getElementById('h-nome').textContent = 'Idêntico ao nome cadastrado para notificações';
+        document.getElementById('h-nome').className   = 'hint';
+        document.getElementById('h-nick').className   = 'hint';
+        document.getElementById('txt-nick').textContent = 'Java · Bedrock · Pirata — todos aceites';
+        document.getElementById('mc-avatar').style.display = 'none';
+        document.getElementById('tag-plat').style.display  = 'none';
+        nomeOk = false; nickOk = false;
+      }
+    } catch { toast('Erro ao enviar solicitação.', 'err'); }
+    btn.textContent = '🌟 Enviar Solicitação'; updateBtn();
+  }
+
+  /* ── NAVEGAÇÃO ── */
+  function showAdminLogin() {
+    document.getElementById('register-view').style.display = 'none';
+    document.getElementById('login-view').style.display    = 'block';
+    setTimeout(() => document.getElementById('inp-user').focus(), 100);
+  }
+  function showRegister() {
+    document.getElementById('login-view').style.display    = 'none';
+    document.getElementById('register-view').style.display = 'block';
+    document.getElementById('inp-pass').value = '';
+    document.getElementById('inp-user').value = '';
+    document.getElementById('h-pass').style.display    = 'none';
+    document.getElementById('h-lockout').style.display = 'none';
+  }
+
+  /* ════════════════════════════════════════
+     AUTENTICAÇÃO com rate limiting
+  ════════════════════════════════════════ */
+  async function doLogin() {
+    // Bloqueia se demasiadas tentativas falhadas
+    if (loginRL.isLocked()) {
+      const m = Math.ceil(loginRL.remaining()/60);
+      document.getElementById('h-lockout').textContent =
+        `🔒 Demasiadas tentativas. Aguarda ${m} min.`;
+      document.getElementById('h-lockout').style.display = 'flex';
+      document.getElementById('h-pass').style.display    = 'none';
+      return;
+    }
+
+    const user = document.getElementById('inp-user').value.trim();
+    const pass = document.getElementById('inp-pass').value;
+    const btn  = document.getElementById('btn-login');
+
+    if (!user || !pass) { toast('Preencha os dados de acesso.', 'err'); return; }
+    // Limites de comprimento
+    if (user.length > 120 || pass.length > 128) { toast('Dados inválidos.', 'err'); return; }
+
+    btn.textContent = 'A validar…'; btn.disabled = true;
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email: user, password: pass });
+      if (error) throw error;
+      if (data.user) {
+        loginRL.reset();
+        document.getElementById('login-view').style.display   = 'none';
+        document.getElementById('ticker-rail').style.display  = 'none';
+        document.getElementById('layout').style.display       = 'none';
+        document.getElementById('admin-panel').style.display  = 'block';
+        document.getElementById('admin-email-display').textContent = data.user.email;
+        await loadAdminDados();
+        toast('👑 Sessão admin iniciada!', 'ok');
+      }
+    } catch {
+      loginRL.fail();
+      document.getElementById('h-pass').style.display    = 'flex';
+      document.getElementById('h-lockout').style.display = 'none';
+      if (loginRL.isLocked()) {
+        document.getElementById('h-lockout').textContent =
+          '🔒 Demasiadas tentativas. Conta bloqueada por 5 min.';
+        document.getElementById('h-lockout').style.display = 'flex';
+        document.getElementById('h-pass').style.display    = 'none';
+      }
+      toast('Credenciais inválidas.', 'err');
+    } finally { btn.textContent = '🔓 Autenticar'; btn.disabled = false; }
+  }
+
+  async function doLogout() {
+    try { await sb.auth.signOut(); } catch{}
+    document.getElementById('admin-panel').style.display  = 'none';
+    document.getElementById('ticker-rail').style.display  = 'block';
+    document.getElementById('layout').style.display       = 'grid';
+    document.getElementById('admin-email-display').textContent = '—';
+    showRegister();
+    toast('Sessão encerrada.', 'inf');
+  }
+
+  /* ── TABS ── */
+  function switchTab(aba) {
+    ['db','logs','bans','audit'].forEach(t => {
+      document.getElementById('tab-'+t).classList.remove('active');
+      document.getElementById('tab-'+t).setAttribute('aria-selected','false');
+      document.getElementById('area-'+t).style.display = 'none';
+    });
+    document.getElementById('tab-'+aba).classList.add('active');
+    document.getElementById('tab-'+aba).setAttribute('aria-selected','true');
+    document.getElementById('area-'+aba).style.display = 'block';
+  }
+
+  /* ════════════════════════════════════════
+     CARREGAR DADOS
+  ════════════════════════════════════════ */
+  async function loadAdminDados() {
+    try {
+      const [{ data:jogs, error:ej }, { data:bans, error:eb }, { data:audit }] = await Promise.all([
+        sb.from('jogadores').select('*').order('created_at',{ascending:false}),
+        sb.from('banidos').select('*').order('created_at',{ascending:false}),
+        sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(60)
+      ]);
+      if (ej || eb) throw new Error('RLS bloqueou o acesso.');
+
+      let fp = {};
+      (jogs||[]).forEach(j => {
+        if (j.fingerprint) fp[j.fingerprint] = (fp[j.fingerprint]||0)+1;
+      });
+      const pend = (jogs||[]).filter(j => j.status === 'pendente');
+      listaAprovadosCompleta = (jogs||[]).filter(j => j.status === 'aprovado');
+      filtradosAprovados = [...listaAprovadosCompleta];
+
+      const hoje = new Date().toDateString();
+      const countHoje = (jogs||[]).filter(j => new Date(j.created_at).toDateString() === hoje).length;
+
+      document.getElementById('count-pend').textContent    = pend.length;
+      document.getElementById('count-aprov').textContent   = listaAprovadosCompleta.length;
+      document.getElementById('count-ban').textContent     = (bans||[]).length;
+      document.getElementById('count-ban-tab').textContent = (bans||[]).length;
+      document.getElementById('count-hoje').textContent    = countHoje;
+
+      renderPendentes(pend, fp);
+      renderAprovados();
+      renderBanidos(bans||[]);
+      renderAudit(audit||[]);
+    } catch {
+      toast('Erro de acesso — verifique RLS no Supabase.', 'err');
+      doLogout();
+    }
+  }
+
+  async function loadSilencioso() {
+    try {
+      const { data:jogs } = await sb.from('jogadores')
+        .select('*').order('created_at',{ascending:false});
+      if (!jogs) return;
+      listaAprovadosCompleta = jogs.filter(j => j.status === 'aprovado');
+      filtradosAprovados = [...listaAprovadosCompleta];
+      filtrarAprovados();
+      document.getElementById('count-aprov').textContent = listaAprovadosCompleta.length;
+      document.getElementById('count-pend').textContent  = document.querySelectorAll('.pcard').length;
+    } catch{}
+  }
+
+  async function refreshAdmin() {
+    toast('A atualizar dados…', 'inf');
+    await loadAdminDados();
+    toast('✅ Dados atualizados.', 'ok');
+  }
+
+  /* ════════════════════════════════════════
+     RENDER — usa data-action em vez de
+     onclick com dados do utilizador
+  ════════════════════════════════════════ */
+  function platClass(p) {
+    return p==='Java'?'badge-java':p==='Bedrock'?'badge-bedrock':'badge-pirata';
+  }
+
+  function renderPendentes(lista, fp) {
+    const grid = document.getElementById('grid-pendentes');
+    if (!lista.length) {
+      grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div>Nenhuma solicitação pendente.</div>';
+      return;
+    }
+    const defAv = 'https://minotar.net/helm/Steve/50.png';
+    grid.innerHTML = lista.map(j => {
+      const qty = fp[j.fingerprint] || 1;
+      const spamHtml = qty >= 3
+        ? `<span class="spam-tag">⚠️ Spam ×${qty}</span>`
+        : `<span style="font-size:11px;color:var(--g);font-family:'Space Mono',monospace">✓ Seguro</span>`;
+      const plat  = j.plataforma || 'Pirata';
+      const avSrc = safeImgUrl(j.avatar_url, defAv);
+      return `<div class="pcard" id="pend-card-${j.id}">
+        <div class="pcard-top">
+          <img src="${esc(avSrc)}" onerror="this.src='${esc(defAv)}'" alt="Avatar de ${esc(j.nick)}">
+          <div>
+            <div class="pcard-nick">${esc(j.nick)}</div>
+            <span class="badge ${platClass(plat)}" style="margin-top:4px;"><span class="dot"></span>${esc(plat)}</span>
+          </div>
+        </div>
+        <details class="deta">
+          <summary>Mais informações</summary>
+          <div class="deta-body">
+            <div><strong>Contacto:</strong> ${esc(j.nome)}</div>
+            <div><strong>Status:</strong> ${spamHtml}</div>
+            <div><strong>Registo:</strong> ${new Date(j.created_at).toLocaleString('pt-BR')}</div>
+          </div>
+        </details>
+        <div class="card-btns">
+          <button class="cbn cbn-ok"
+                  data-action="aprovar"
+                  data-id="${j.id}"
+                  aria-label="Aprovar ${esc(j.nick)}">✓ Aprovar</button>
+          <div style="display:flex;gap:7px;">
+            <button class="cbn cbn-reject" style="flex:1;"
+                    data-action="recusar"
+                    data-id="${j.id}"
+                    aria-label="Recusar ${esc(j.nick)}">Recusar</button>
+            <button class="cbn cbn-ban" style="flex:1;"
+                    data-action="banir-terminal"
+                    data-id="${j.id}"
+                    data-fp="${esc(j.fingerprint||'')}"
+                    aria-label="Banir terminal de ${esc(j.nick)}">Banir</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAprovados() {
+    const tb = document.getElementById('tb-aprov');
+    const em = document.getElementById('em-aprov');
+    if (!filtradosAprovados.length) { tb.innerHTML=''; em.style.display='block'; return; }
+    em.style.display = 'none';
+    const defAv = 'https://minotar.net/helm/Steve/50.png';
+    tb.innerHTML = filtradosAprovados.map(j => {
+      const plat  = j.plataforma || 'Pirata';
+      const nickSafe = (j.nick||'Steve').replace(/[^a-zA-Z0-9_]/g,'');
+      const avSrc = safeImgUrl(j.avatar_url,
+        `https://minotar.net/helm/${encodeURIComponent(nickSafe)}/50.png`);
+      return `<tr id="row-aprov-${j.id}">
+        <td data-label="JOGADOR">
+          <div class="pcell">
+            <img src="${esc(avSrc)}" onerror="this.src='${esc(defAv)}'" alt="">
+            <span class="pnick">${esc(j.nick)}</span>
+          </div>
+        </td>
+        <td data-label="CONTACTO">${esc(j.nome)}</td>
+        <td data-label="PLATAFORMA">
+          <span class="badge ${platClass(plat)}"><span class="dot"></span>${esc(plat)}</span>
+        </td>
+        <td data-label="INGRESSO" style="color:var(--muted);font-size:12px;">
+          ${new Date(j.created_at).toLocaleDateString('pt-BR')}
+        </td>
+        <td data-label="AÇÕES">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn-sm r"
+                    data-action="remover"
+                    data-id="${j.id}"
+                    aria-label="Remover ${esc(j.nick)} da whitelist">Remover</button>
+            <button class="btn-sm gold"
+                    data-action="banir-lista"
+                    data-id="${j.id}"
+                    data-fp="${esc(j.fingerprint||'')}"
+                    aria-label="Banir ${esc(j.nick)}">Banir</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderBanidos(lista) {
+    const tb = document.getElementById('tb-bans');
+    const em = document.getElementById('em-bans');
+    if (!lista.length) { tb.innerHTML=''; em.style.display='block'; return; }
+    em.style.display = 'none';
+    tb.innerHTML = lista.map(b => `<tr id="row-ban-${b.id}">
+      <td data-label="HASH" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--red);">${esc(b.hash)}</td>
+      <td data-label="MOTIVO">${esc(b.motivo)}</td>
+      <td data-label="DATA" style="color:var(--muted);font-size:12px;">${new Date(b.created_at).toLocaleString('pt-BR')}</td>
+      <td data-label="AÇÕES">
+        <button class="btn-sm gold"
+                data-action="desbanir"
+                data-id="${b.id}"
+                aria-label="Revogar banimento do terminal">Desbanir</button>
+      </td>
+    </tr>`).join('');
+  }
+
+  function renderAudit(lista) {
+    const tb = document.getElementById('tb-audit');
+    const em = document.getElementById('em-audit');
+    if (!lista.length) { tb.innerHTML=''; em.style.display='block'; return; }
+    em.style.display = 'none';
+    const cor = { aprovado:'var(--g)', removido:'var(--red)', banido:'var(--gold)', recusado:'var(--muted)' };
+    tb.innerHTML = lista.map(a => {
+      const ts = a.created_at || a.criado_em;
+      return `<tr>
+        <td data-label="AÇÃO" style="color:${cor[a.acao]||'var(--sub)'};">${esc(a.acao)}</td>
+        <td data-label="NICK" style="font-family:'Space Mono',monospace;">${esc(a.nick)}</td>
+        <td data-label="DATA" style="color:var(--muted);font-size:12px;">${ts?new Date(ts).toLocaleString('pt-BR'):'—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filtrarAprovados() {
+    const q = document.getElementById('admin-search').value.toLowerCase().slice(0,36);
+    filtradosAprovados = listaAprovadosCompleta.filter(j =>
+      j.nick.toLowerCase().includes(q) || (j.nome||'').toLowerCase().includes(q)
+    );
+    renderAprovados();
+  }
+
+  /* ════════════════════════════════════════
+     AÇÕES ADMIN
+  ════════════════════════════════════════ */
+  async function aprovarCard(id, btn) {
+    btn.textContent = '…'; btn.disabled = true;
+    const card = document.getElementById(`pend-card-${id}`);
+    const nick = card?.querySelector('.pcard-nick')?.textContent || String(id);
+    try {
+      const { error } = await sb.from('jogadores').update({ status:'aprovado' }).eq('id', id);
+      if (error) throw error;
+      await sb.from('audit_log').insert({ acao:'aprovado', nick, created_at:new Date().toISOString() }).catch(()=>{});
+      if (card) {
+        card.classList.add('glow-approve');
+        setTimeout(() => {
+          card.classList.add('pcard-exit');
+          setTimeout(() => {
+            card.remove();
+            const g = document.getElementById('grid-pendentes');
+            if (!g.querySelectorAll('.pcard').length)
+              g.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div>Nenhuma solicitação pendente.</div>';
+          }, 360);
+        }, 520);
+      }
+      toast('✅ Jogador aprovado!', 'ok');
+      await loadSilencioso();
+    } catch {
+      toast('Erro ao aprovar.', 'err');
+      btn.textContent = '✓ Aprovar'; btn.disabled = false;
+    }
+  }
+
+  async function recusarCard(id, btn) {
+    if (!confirm('Recusar e eliminar este pedido?')) return;
+    btn.textContent = '…'; btn.disabled = true;
+    const card = document.getElementById(`pend-card-${id}`);
+    const nick = card?.querySelector('.pcard-nick')?.textContent || String(id);
+    try {
+      const { error } = await sb.from('jogadores').delete().eq('id', id);
+      if (error) throw error;
+      await sb.from('audit_log').insert({ acao:'recusado', nick, created_at:new Date().toISOString() }).catch(()=>{});
+      if (card) {
+        card.classList.add('pcard-exit');
+        setTimeout(() => {
+          card.remove();
+          const g = document.getElementById('grid-pendentes');
+          if (!g.querySelectorAll('.pcard').length)
+            g.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">✅</div>Nenhuma solicitação pendente.</div>';
+        }, 360);
+      }
+      toast('Pedido recusado.', 'inf');
+    } catch {
+      toast('Erro ao recusar.', 'err');
+      btn.disabled = false;
+    }
+  }
+
+  async function removerAprovado(id, btn) {
+    if (!confirm('Remover jogador da whitelist?')) return;
+    btn.textContent = '…'; btn.disabled = true;
+    const row  = document.getElementById(`row-aprov-${id}`);
+    const nick = row?.querySelector('.pnick')?.textContent || String(id);
+    try {
+      const { error } = await sb.from('jogadores').delete().eq('id', id);
+      if (error) throw error;
+      await sb.from('audit_log').insert({ acao:'removido', nick, created_at:new Date().toISOString() }).catch(()=>{});
+      if (row) { row.classList.add('row-exit'); setTimeout(()=>row.remove(), 320); }
+      toast('Jogador removido da whitelist.', 'inf');
+      await loadSilencioso();
+    } catch {
+      toast('Erro ao remover.', 'err');
+      btn.textContent = 'Remover'; btn.disabled = false;
+    }
+  }
+
+  async function banirDaLista(hash, id, btn) {
+    if (!hash) return toast('Fingerprint indisponível.', 'err');
+    if (!confirm('Banir terminal e remover da whitelist?')) return;
+    btn.textContent = '…'; btn.disabled = true;
+    try {
+      await Promise.all([
+        sb.from('banidos').insert([{ hash, motivo:'Banimento manual via whitelist', created_at:new Date().toISOString() }]),
+        sb.from('jogadores').delete().eq('id', id)
+      ]);
+      await sb.from('audit_log').insert({ acao:'banido', nick:`id:${id}`, created_at:new Date().toISOString() }).catch(()=>{});
+      toast('Terminal banido.', 'ok');
+      await loadAdminDados();
+    } catch {
+      toast('Erro ao banir.', 'err');
+      btn.textContent = 'Banir'; btn.disabled = false;
+    }
+  }
+
+  async function banirTerminal(hash, jogadorId, btn) {
+    if (!hash) return toast('Hash inválido.', 'err');
+    if (!confirm('Banir este terminal permanentemente?')) return;
+    try {
+      await sb.from('banidos').insert([{ hash, motivo:'Banimento manual via painel', created_at:new Date().toISOString() }]);
+      if (jogadorId) await sb.from('jogadores').delete().eq('id', jogadorId);
+      await sb.from('audit_log').insert({ acao:'banido', nick:`terminal:${hash.slice(0,8)}`, created_at:new Date().toISOString() }).catch(()=>{});
+      const card = document.getElementById(`pend-card-${jogadorId}`);
+      if (card) { card.classList.add('pcard-exit'); setTimeout(()=>card.remove(), 360); }
+      toast('Terminal banido.', 'ok');
+      await loadAdminDados();
+    } catch { toast('Erro ao banir.', 'err'); }
+  }
+
+  async function desbanir(id) {
+    if (!confirm('Revogar banimento?')) return;
+    const row = document.getElementById(`row-ban-${id}`);
+    try {
+      await sb.from('banidos').delete().eq('id', id);
+      if (row) { row.classList.add('row-exit'); setTimeout(()=>row.remove(), 320); }
+      toast('Terminal autorizado.', 'ok');
+      await loadAdminDados();
+    } catch { toast('Erro ao desbanir.', 'err'); }
+  }
+
+  async function limparAudit() {
+    if (!confirm('Limpar todo o histórico de ações?')) return;
+    try {
+      await sb.from('audit_log').delete().neq('id', 0);
+      document.getElementById('tb-audit').innerHTML = '';
+      document.getElementById('em-audit').style.display = 'block';
+      toast('Histórico limpo.', 'inf');
+    } catch { toast('Erro ao limpar histórico.', 'err'); }
+  }
+
+  /* ════════════════════════════════════════
+     EXPORTAR WHITELIST — UUID v4 real
+  ════════════════════════════════════════ */
+  function exportarWhitelist() {
+    if (!listaAprovadosCompleta.length) { toast('Nenhum jogador para exportar.', 'err'); return; }
+    const wl = listaAprovadosCompleta.map(j => ({
+      uuid: uuid4(),
+      name: j.nick
+    }));
+    const blob = new Blob([JSON.stringify(wl, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'whitelist.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    toast(`📥 ${listaAprovadosCompleta.length} jogadores exportados.`, 'ok');
+  }
+
+  /* ── CRUZAMENTO ── */
+  function ejecutarCruzamento() {
+    const raw = document.getElementById('log-inp').value.trim();
+    if (!raw) return toast('Cole os nicknames primeiro.', 'err');
+    const logNicks = [...new Set(
+      raw.split('\n').map(n=>n.trim().slice(0,36)).filter(Boolean)
+    )].slice(0, 500); // limita a 500 nicks
+    const logSet = new Set(logNicks.map(n=>n.toLowerCase()));
+    const dbSet  = new Set(listaAprovadosCompleta.map(j=>j.nick.toLowerCase()));
+
+    const invasores   = logNicks.filter(n => !dbSet.has(n.toLowerCase()));
+    const ausentes    = listaAprovadosCompleta.filter(j => !logSet.has(j.nick.toLowerCase()));
+    const confirmados = listaAprovadosCompleta.filter(j =>  logSet.has(j.nick.toLowerCase()));
+    const defAv = 'https://minotar.net/helm/Steve/50.png';
+
+    const results = document.getElementById('cross-results');
+    results.style.display = 'grid';
+    results.innerHTML =
+      crossCard('🚨 Invasores', 'var(--red)', invasores.length,
+        invasores.map(n => `<div class="cross-item">
+          <div><div class="c-nick" style="color:var(--red)">${esc(n)}</div>
+          <div class="c-sub">Não cadastrado</div></div>
+          <span class="badge" style="background:rgba(255,51,85,.14);color:var(--red);border:1px solid rgba(255,51,85,.3);">INVASOR</span>
+        </div>`).join('')
+      ) +
+      crossCard('💤 Ausentes', 'var(--gold)', ausentes.length,
+        ausentes.map(j => `<div class="cross-item">
+          <div><div class="c-nick" style="color:var(--gold)">${esc(j.nick)}</div>
+          <div class="c-sub">${esc(j.nome)}</div></div>
+          <span class="badge" style="background:rgba(255,209,102,.1);color:var(--gold);border:1px solid rgba(255,209,102,.3);">AUSENTE</span>
+        </div>`).join('')
+      ) +
+      crossCard('✅ Confirmados', 'var(--g)', confirmados.length,
+        confirmados.map(j => {
+          const av = safeImgUrl(j.avatar_url, defAv);
+          return `<div class="cross-item">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <img src="${esc(av)}" onerror="this.src='${esc(defAv)}'" style="width:22px;height:22px;border-radius:4px;image-rendering:pixelated;" alt="">
+              <div><div class="c-nick" style="color:var(--g)">${esc(j.nick)}</div>
+              <div class="c-sub">${esc(j.nome)}</div></div>
+            </div>
+          </div>`;
+        }).join('')
+      );
+    toast('⚡ Cruzamento concluído!', 'ok');
+  }
+
+  function crossCard(title, color, count, inner) {
+    return `<div class="cross-card">
+      <div class="cross-head">
+        <span style="color:${color}">${esc(title)}</span>
+        <span class="badge" style="background:rgba(255,255,255,.06);color:${color};border:1px solid rgba(255,255,255,.1);">${count}</span>
+      </div>
+      <div class="cross-list">${inner||'<div class="empty" style="padding:16px;">Nenhum registo.</div>'}</div>
+    </div>`;
+  }
+
+  function limparCross() {
+    document.getElementById('log-inp').value = '';
+    const r = document.getElementById('cross-results');
+    r.innerHTML = ''; r.style.display = 'none';
+  }
+
+  /* ── TOAST ── */
+  let toastT;
+  function toast(msg, type='ok') {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = type;
+    t.style.display = 'block';
+    t.classList.remove('toast-show'); void t.offsetWidth; t.classList.add('toast-show');
+    clearTimeout(toastT);
+    toastT = setTimeout(() => t.style.display='none', 4200);
+  }
+</script>
+</body>
+</html>
